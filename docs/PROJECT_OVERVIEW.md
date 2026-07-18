@@ -21,6 +21,10 @@ The goal is to preserve useful information that would otherwise disappear when
 an agent session ends, while keeping each record scoped to the repository,
 system, task, or tool for which it is relevant.
 
+The system stores individual experience records. Each record captures one reusable piece of knowledge produced during a coding task.
+
+Every experience record has exactly one type:
+
 - **Workflows:** successful sequences of tools, MCP servers, commands, waits,
   tests, deployments, and verification steps.
 - **Lessons:** reusable facts learned during an investigation.
