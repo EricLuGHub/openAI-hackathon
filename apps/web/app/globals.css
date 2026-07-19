@@ -166,6 +166,7 @@ h1 em {
   min-width: 190px;
   display: flex;
   justify-content: space-between;
+  cursor: default;
 }
 .metrics {
   display: grid;
@@ -439,6 +440,87 @@ h1 em {
 .empty.small {
   padding: 28px;
 }
+.view-panel {
+  border: 1px solid var(--line);
+  background: #10120f99;
+  min-height: 430px;
+  animation: rise 0.3s ease both;
+}
+.session-table article {
+  display: grid;
+  grid-template-columns: 42px minmax(260px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.session-table article b {
+  font-size: 13px;
+}
+.session-table article p {
+  margin: 7px 0 0;
+  color: #858a80;
+  font-size: 11px;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 7px;
+  background: var(--amber);
+}
+.status-dot.completed {
+  background: var(--acid);
+  box-shadow: 0 0 8px #c8ff5566;
+}
+.session-meta {
+  min-width: 220px;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px 14px;
+  justify-items: end;
+  font: 8px DM Mono;
+  color: #71766d;
+  text-transform: uppercase;
+}
+.session-meta time {
+  grid-column: 1 / -1;
+}
+.session-meta code {
+  color: #a8ada3;
+}
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+.signal-card {
+  min-height: 210px;
+  border: 0;
+  background: #111310;
+  padding: 22px;
+  text-align: left;
+  cursor: pointer;
+  animation: rise 0.4s ease both;
+  transition: background 0.2s;
+}
+.signal-card:hover {
+  background: #181c16;
+}
+.signal-card .kind {
+  margin-bottom: 18px;
+}
+.signal-card h3 {
+  font-size: 13px;
+  margin: 12px 0 7px;
+}
+.signal-card p {
+  color: #858a80;
+  font-size: 11px;
+  line-height: 1.6;
+}
 .overlay {
   position: fixed;
   inset: 0;
@@ -547,6 +629,9 @@ h1 em {
   .filters {
     display: none;
   }
+  .signal-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 650px) {
   aside {
@@ -575,5 +660,15 @@ h1 em {
   }
   .score {
     display: none;
+  }
+  .session-table article {
+    grid-template-columns: 34px 1fr;
+  }
+  .session-meta {
+    grid-column: 2;
+    justify-items: start;
+  }
+  .signal-grid {
+    grid-template-columns: 1fr;
   }
 }
