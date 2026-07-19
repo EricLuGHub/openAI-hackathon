@@ -2,7 +2,7 @@
 
 ## Status
 
-Initial architecture for discussion. The MVP supports one team and one repository.
+Initial architecture for discussion. The MVP supports one shared workspace mapped to one repository.
 
 ## Components
 
@@ -125,7 +125,7 @@ Codex uses prior experience
 ## MVP boundaries
 
 - one repository;
-- one shared team space;
+- one shared workspace;
 - no user accounts or roles;
 - no AI inference in the backend;
 - no dedicated vector database;
