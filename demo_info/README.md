@@ -9,6 +9,7 @@ It separates measured results from product claims and future work.
 2. [Evaluation report](02_EVALUATION_REPORT.md) — measured Codex comparison and limitations.
 3. [Three-minute demo runbook](03_DEMO_RUNBOOK.md) — video and live-demo sequence.
 4. [Verification guide](04_VERIFICATION_GUIDE.md) — how judges can run and inspect the project.
+5. [Future vision](05_FUTURE_VISION.md) — cross-repository communication and agent-to-agent escalation.
 
 ## One-sentence description
 

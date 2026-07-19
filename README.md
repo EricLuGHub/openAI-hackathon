@@ -156,7 +156,7 @@ The real-repository experiment and repeatable instructions live in [docs/EVALUAT
 
 ## Current scope
 
-The MVP intentionally supports one team and one repository context, local-first operation, deterministic lexical/metadata retrieval, and explicit agent feedback. Authentication, multi-tenancy, semantic embeddings, automated background grooming, and hosted deployment are follow-on work.
+The MVP intentionally supports one shared workspace mapped to one repository, local-first operation, deterministic lexical/metadata retrieval, and explicit agent feedback. Authentication, multiple workspaces, semantic embeddings, automated background grooming, and hosted deployment are follow-on work.
 
 ## Built with Codex
 

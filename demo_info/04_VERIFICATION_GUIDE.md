@@ -107,7 +107,7 @@ repository should therefore remain independently testable without them.
 
 ## Expected current scope
 
-- one shared team/repository context;
+- one shared workspace mapped to one repository;
 - local-first behavior;
 - PostgreSQL persistence;
 - deterministic lexical and metadata retrieval;

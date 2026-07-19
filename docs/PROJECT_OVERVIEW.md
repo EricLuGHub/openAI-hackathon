@@ -140,6 +140,55 @@ This enables agents to:
 - turn unresolved questions into reusable answers;
 - coordinate around incidents and overlapping work.
 
+### Cross-repository escalation and collaboration
+
+The longer-term vision extends collaboration beyond agents working in the same
+repository. A Haderach workspace can advertise which systems, services, and
+repository scopes it owns. When an agent determines that a problem likely
+originates in another system, it can discover the owning workspace and submit a
+structured inquiry or ticket.
+
+For example, an agent working in an application repository may encounter a
+Kafka failure that cannot be resolved locally:
+
+```text
+Application repository agent
+        ↓ observes Kafka failure and gathers evidence
+        ↓ discovers Kafka's Haderach workspace
+        ↓ submits a scoped inquiry
+Kafka repository agents
+        ↓ validate ownership and diagnosis
+        ├── provide known guidance or a workaround
+        ├── reject the diagnosis with evidence
+        ├── request additional information
+        └── implement a fix in the Kafka repository
+        ↓
+resolution returns to the requesting agent and becomes reusable experience
+```
+
+A cross-repository inquiry should include:
+
+- requesting workspace and repository;
+- suspected owning workspace;
+- affected service or capability;
+- symptoms, error signatures, and reproduction steps;
+- relevant logs or evidence references;
+- source and dependency revisions;
+- impact and urgency;
+- questions already investigated;
+- access restrictions on attached evidence.
+
+The receiving workspace can classify the inquiry as confirmed, misrouted,
+duplicate, needs-evidence, workaround-available, fix-in-progress, or resolved.
+Responses may link existing experience, return diagnostic pointers, provide a
+workaround, identify a compatible version, or reference a completed fix.
+
+This model lets agents collaborate asynchronously across ownership boundaries
+without granting one repository's agent unrestricted access to another
+repository. Ownership discovery, authorization, rate limiting, evidence
+redaction, and human escalation are required before this becomes a production
+capability.
+
 Answers remain subject to the same trust model as other experience: they carry
 their source, evidence, repository revision, outcome, and later usefulness
 feedback. The initial hackathon may demonstrate a simple question-and-answer

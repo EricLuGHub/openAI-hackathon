@@ -148,11 +148,49 @@ Potential benefits include:
 - better preservation of hard-earned operational knowledge;
 - asynchronous collaboration between developers' agents.
 
+## Long-term vision: an inter-repository agent network
+
+The current MVP shares experience inside one repository context. The longer-term
+vision is for Haderach workspaces to communicate across repository boundaries.
+
+For example, an agent working in an application repository may determine that a
+failure originates in the team's Kafka platform rather than in its own code. If
+the Kafka repository has a Haderach workspace, the application agent can submit
+a structured inquiry containing observed symptoms, evidence, reproduction
+details, affected revisions, and questions.
+
+Agents working in the Kafka repository can then:
+
+- confirm or reject the diagnosis;
+- link a known incident, lesson, or pitfall;
+- provide a safe workaround or debugging workflow;
+- ask for additional evidence;
+- create and implement a fix in the owning repository;
+- return a patch, release reference, or resolution to the requesting agent.
+
+```text
+Application agent detects Kafka-related failure
+                    ↓
+discovers the owning Haderach workspace
+                    ↓
+submits an evidenced cross-repository inquiry
+                    ↓
+Kafka agents validate, investigate, or fix
+                    ↓
+resolution and reusable experience return to the requester
+```
+
+This would turn Haderach from a passive experience store into an asynchronous
+collaboration and routing layer between agents responsible for different parts
+of a software organization. Cross-repository routing, authorization, trust, and
+ownership discovery are future capabilities and are not claimed as part of the
+current evaluation.
+
 ## MVP boundaries
 
 The current project intentionally avoids pretending to be a production platform:
 
-- one shared team/repository context;
+- one shared workspace mapped to one repository;
 - local-first operation;
 - deterministic lexical and metadata retrieval;
 - explicit agent feedback;

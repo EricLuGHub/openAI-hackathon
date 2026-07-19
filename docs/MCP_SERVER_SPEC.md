@@ -154,7 +154,7 @@ repository work.
 
 The static-secret MVP below is superseded for the hosted milestone by
 `AUTHENTICATION_AND_MULTI_TENANCY_SPEC.md`, which defines personal MCP tokens,
-scopes, teams, and repository authorization.
+scopes, workspaces, and membership-based repository authorization.
 
 - Remote Streamable HTTP is the initial hosted transport.
 - A local stdio bridge is optional.

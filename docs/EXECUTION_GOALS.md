@@ -8,7 +8,7 @@ of “done” for the first end-to-end version of Agent Haderach.
 
 ## Target milestone
 
-Build a runnable single-team, single-repository vertical slice where two Codex
+Build a runnable single-workspace, single-repository vertical slice where two Codex
 sessions can share and reuse structured agent experience through MCP.
 
 The milestone is complete only when the full workflow functions:
@@ -244,7 +244,7 @@ Before declaring the milestone complete:
 
 Do not block the first milestone on:
 
-- multiple organizations, teams, or repositories;
+- multiple workspaces or repositories;
 - signup, OAuth, roles, or granular permissions;
 - dedicated vector-search infrastructure;
 - backend AI inference;

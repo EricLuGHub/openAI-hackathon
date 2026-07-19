@@ -17,12 +17,12 @@ only when necessary.
 ## MVP tenancy and repository scope — Superseded
 
 The following describes the completed local MVP. The next milestone replaces
-this model with authenticated teams and repository isolation as specified in
+this model with authenticated workspaces and repository isolation as specified in
 `AUTHENTICATION_AND_MULTI_TENANCY_SPEC.md`.
 
-The initial deployment supports one team and one repository. Every experience
-record is implicitly associated with that repository, and every connected agent
-participates in the same shared experience space.
+The initial deployment supports one shared workspace mapped to one repository.
+Every experience record is implicitly associated with that repository, and every
+connected agent participates in the same shared experience space.
 
 The MVP does not require user accounts, organizations, memberships, roles, or
 per-record permissions. A private deployment may run without authentication; a
@@ -30,8 +30,8 @@ public demo should use one static API secret.
 
 The schema may retain a `repository` field to make a future migration easier,
 but the application does not need multi-repository selection or tenant-aware
-queries yet. Multi-team permissions and repository isolation can be added after
-the shared-experience loop is proven.
+queries yet. Multi-user workspace permissions and cross-workspace isolation can
+be added after the shared-experience loop is proven.
 
 ## Experience types
 
