@@ -169,8 +169,8 @@ curl http://127.0.0.1:3001/health
 Deploy this monorepo as two services backed by one Railway PostgreSQL service:
 
 - **cloud** uses the repository `Dockerfile`, its default command, `PORT=3001`,
-  and the PostgreSQL `DATABASE_URL`. The included `railway.toml` runs migrations
-  before deployment and checks `/health`.
+  and the PostgreSQL `DATABASE_URL`. Configure its pre-deploy command as
+  `pnpm --filter @haderach/cloud db:push` and health check as `/health`.
 - **web** uses the same image with the start command
   `pnpm --filter @haderach/web start`, `PORT=3000`, and
   `CLOUD_SERVICE_URL=http://cloud.railway.internal:3001`.
