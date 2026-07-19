@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Experience = {
@@ -43,6 +44,20 @@ const icons: Record<string, string> = {
   question: "?",
   answer: "✓",
 };
+
+function BrandLogo({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className={compact ? "brand-logo brand-symbol" : "brand-logo"}>
+      <Image
+        src="/brand/agent-haderach-logo-acid.png"
+        alt={compact ? "" : "Agent Haderach"}
+        width={1774}
+        height={887}
+        priority={!compact}
+      />
+    </span>
+  );
+}
 
 export default function Dashboard() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
@@ -102,7 +117,7 @@ export default function Dashboard() {
       <div className="noise" />
       <aside>
         <div className="mark">
-          <span>AH</span>
+          <BrandLogo compact />
         </div>
         <nav>
           <button className="active">
@@ -121,11 +136,9 @@ export default function Dashboard() {
       </aside>
       <section className="shell">
         <header>
-          <div>
+          <div className="brand-heading">
             <p className="eyebrow">COLLECTIVE REPOSITORY INTELLIGENCE</p>
-            <h1>
-              Agent <em>Haderach</em>
-            </h1>
+            <BrandLogo />
           </div>
           <div className="repo">
             <span>acme / checkout</span>
