@@ -49,6 +49,7 @@ scope:
   services: [checkout, payments]
   tools: [jenkins-mcp, dynatrace-mcp]
   error_signatures: []
+  keywords: [deployment, smoke-test, payment-health, observability]
 
 evidence:
   - Jenkins build 1842
@@ -92,6 +93,12 @@ The detailed content may be large, but it should still be a cleaned task record,
 not private chain-of-thought or an unfiltered raw transcript. Original logs,
 builds, code, and other evidence should be referenced separately where possible.
 
+Detailed content is optional. Some experiences are inherently short and are
+fully expressed by their summary—for example, a brief service incident, a
+single pitfall, or one precise lesson. The system should not generate filler or
+repeat the summary merely to create a larger detail field. Record length should
+reflect how much useful information actually exists.
+
 ## Granularity
 
 One agent session may produce several independent records. For example, a
@@ -115,6 +122,7 @@ Each record should be searchable using several signals:
 - service or platform;
 - MCP servers and tools used;
 - exact or normalized error signature;
+- normalized keywords, concepts, aliases, and acronyms;
 - experience type;
 - repository revision;
 - creation and validation time;
@@ -123,6 +131,12 @@ Each record should be searchable using several signals:
 - usefulness feedback from later agents.
 
 Exact error and scope matches should generally outrank loose semantic similarity.
+
+Keywords may be supplied by the contributing agent and enriched during
+ingestion. The service should normalize casing, aliases, acronyms, and obvious
+duplicates. Keywords improve recall when different agents describe the same
+problem differently, but they should remain one ranking signal rather than an
+uncontrolled bag of generated terms.
 
 ## Retrieval request
 
@@ -134,6 +148,7 @@ find_experience(
   paths?,
   services?,
   error?,
+  keywords?,
   types?,
   token_budget?
 )
@@ -147,6 +162,7 @@ repository: acme/checkout
 revision: def456
 services: [jenkins, redis]
 error: Connection refused during checkout integration
+keywords: [ci, integration-test, redis-sidecar, connection-failure]
 types: [workflow, lesson, pitfall, incident]
 token_budget: 800
 ```
@@ -158,9 +174,10 @@ Candidate records may come from:
 1. exact error-signature matching;
 2. repository and scope filtering;
 3. service and tool matching;
-4. semantic task similarity;
-5. active incident matching;
-6. related questions, answers, and handoffs.
+4. keyword, alias, and acronym matching;
+5. semantic task similarity;
+6. active incident matching;
+7. related questions, answers, and handoffs.
 
 The store should filter clearly invalid, inaccessible, or superseded records
 before ranking them.
@@ -174,6 +191,7 @@ task similarity
 + repository and path match
 + exact error match
 + service and tool match
++ keyword, alias, and acronym match
 + successful reuse
 + recent validation
 + evidence quality
@@ -261,6 +279,26 @@ metrics remaining healthy.
 
 Repeated use alone does not prove quality. Failed uses, contradictions, and
 staleness must lower a record's ranking.
+
+## Duplicate reuse and reinforcement
+
+When an agent discovers substantially the same experience as an existing record,
+the system should normally avoid creating a duplicate. Instead:
+
+1. The MCP server reports which existing experience was retrieved and reused.
+2. The cloud service compares the new result with that experience.
+3. If they represent the same lesson or workflow, the service records another
+   use, attaches any new evidence or outcome, and updates its ranking signals.
+4. If the new information materially differs, the service creates a separate
+   record or a new version rather than merging it incorrectly.
+
+Successful repetition should increase confidence and usefulness. Mere retrieval
+should not: reinforcement requires evidence that the experience was applicable
+or produced a successful outcome.
+
+This behavior crosses component boundaries. The MCP integration observes and
+reports reuse; the cloud store owns deduplication, evidence aggregation,
+versioning, and ranking updates.
 
 ## Freshness
 
