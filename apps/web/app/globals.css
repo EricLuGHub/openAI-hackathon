@@ -56,18 +56,29 @@ aside {
   display: grid;
   place-items: center;
 }
-.mark span {
-  border: 1px solid var(--acid);
-  color: var(--acid);
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  font: bold 11px DM Mono;
-  transform: rotate(45deg);
+.brand-logo {
+  position: relative;
+  display: block;
+  width: 310px;
+  height: 79px;
+  overflow: hidden;
 }
-.mark span::first-line {
-  transform: rotate(-45deg);
+.brand-logo img {
+  position: absolute;
+  width: 389px;
+  height: auto;
+  max-width: none;
+  left: -44px;
+  top: -55px;
+}
+.brand-symbol {
+  width: 48px;
+  height: 44px;
+}
+.brand-symbol img {
+  width: 147px;
+  left: -16px;
+  top: -21px;
 }
 nav {
   margin-top: 32px;
@@ -129,9 +140,14 @@ nav button small {
 }
 header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
+}
+.brand-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .eyebrow,
 label,
@@ -146,17 +162,7 @@ label,
 .eyebrow {
   color: var(--acid);
   font-size: 10px;
-  margin: 0 0 7px;
-}
-h1 {
-  font-size: 34px;
-  margin: 0;
-  letter-spacing: -0.05em;
-  font-weight: 500;
-}
-h1 em {
-  font-weight: 400;
-  color: #a6a99f;
+  margin: 0 0 4px;
 }
 .repo {
   border: 1px solid var(--line);
@@ -563,6 +569,15 @@ h1 em {
   }
   .repo {
     display: none;
+  }
+  .brand-logo {
+    width: 260px;
+    height: 66px;
+  }
+  .brand-logo img {
+    width: 326px;
+    left: -37px;
+    top: -46px;
   }
   .grid {
     display: block;
