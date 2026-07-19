@@ -128,4 +128,3 @@ separate routes initially.
 2. Which events must be live versus replayed from recorded data?
 3. Should task files be editable from the UI?
 4. How should ranking factors be explained without overwhelming users?
-

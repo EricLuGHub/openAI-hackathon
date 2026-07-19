@@ -135,4 +135,3 @@ Codex uses prior experience
 2. Does the MCP interface use remote Streamable HTTP only or also a local stdio bridge?
 3. Is PostgreSQL full-text search sufficient for the demo dataset?
 4. Which events require realtime delivery to the UI?
-

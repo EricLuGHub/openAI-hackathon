@@ -165,4 +165,3 @@ repository work.
 3. Should incident recovery use `report_incident` or a separate tool?
 4. How should duplicate candidates be presented to the agent?
 5. Which operations require user approval in Codex?
-

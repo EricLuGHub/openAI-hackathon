@@ -13,10 +13,10 @@ correctness or causing stale information to mislead agents.
 
 Use the same Codex configuration in both conditions:
 
-| Condition | Shared experience |
-|---|---|
-| Baseline | Disabled |
-| Agent Haderach | Enabled |
+| Condition      | Shared experience |
+| -------------- | ----------------- |
+| Baseline       | Disabled          |
+| Agent Haderach | Enabled           |
 
 Keep the model, prompt, repository revision, environment, tools, and time limits
 the same.
@@ -105,4 +105,3 @@ The concept should be reconsidered if:
 3. Which metrics can Codex expose reliably?
 4. Which assertions are automated versus manually reviewed?
 5. How will stale-experience behavior be tested?
-

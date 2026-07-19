@@ -2,8 +2,8 @@
 
 ## Status
 
-Initial design for discussion. This component defines the repository-local
-working environment that coordinates Codex with Agent Haderach.
+Initial design for discussion. This component defines the shared local workspace
+that coordinates repositories, worktrees, Codex sessions, and Agent Haderach.
 
 ## Goal
 
@@ -20,12 +20,18 @@ The workspace runtime is primarily instructions, templates, configuration, and
 small automations. The cloud service remains the shared source of agent
 experience.
 
-## Proposed workspace layout
+## Proposed workspace layout — Decided
 
 ```text
-.agent-haderach/
+agent-haderach-workspace/
 ├── AGENTS.md
 ├── config.yaml
+├── repos/
+│   └── checkout/
+│       ├── main/
+│       └── worktrees/
+│           ├── task_123/
+│           └── task_456/
 ├── tasks/
 │   ├── backlog/
 │   ├── in-progress/
@@ -41,8 +47,13 @@ experience.
 ```
 
 `AGENTS.md` explains the required workflow. `config.yaml` contains repository
-and service settings. Task files provide lightweight local visibility while the
-cloud store preserves shared experience across contributors.
+and service settings. `repos/<repo>/main` is the canonical checkout, and
+task-specific worktrees live under `repos/<repo>/worktrees/`. Task files provide
+lightweight local visibility while the cloud store preserves shared experience
+across contributors.
+
+The MVP configures one repository but keeps the `repos/` boundary so additional
+repositories can be added later without restructuring the workspace.
 
 ## Session lifecycle
 
@@ -227,10 +238,11 @@ Initial `config.yaml` concept:
 
 ```yaml
 repository: acme/checkout
+repository_path: repos/checkout/main
 api_url: https://agent-haderach.example.com
 grooming_interval_minutes: 60
-tasks_directory: .agent-haderach/tasks
-worktrees_directory: ../worktrees
+tasks_directory: tasks
+worktrees_directory: repos/checkout/worktrees
 ```
 
 Secrets must come from environment variables rather than this file.
@@ -243,4 +255,3 @@ Secrets must come from environment variables rather than this file.
 4. How should overlapping work be detected and resolved?
 5. Which MCP calls are mandatory versus recommended at session boundaries?
 6. How much session state belongs locally versus only in the cloud?
-

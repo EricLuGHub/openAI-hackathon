@@ -149,6 +149,11 @@ activemq-data/
 
 # Environments
 .env
+.next/
+node_modules/
+dist/
+coverage/
+.agent-haderach-runtime/
 .envrc
 .venv
 env/
