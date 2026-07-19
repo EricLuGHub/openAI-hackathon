@@ -1,6 +1,3 @@
-ALTER TABLE sessions ADD COLUMN workspace_id uuid REFERENCES workspaces(id);
-ALTER TABLE sessions ADD COLUMN actor_user_id uuid REFERENCES users(id);
-ALTER TABLE sessions ADD COLUMN token_id uuid REFERENCES personal_access_tokens(id);
 ALTER TABLE experiences ADD COLUMN workspace_id uuid REFERENCES workspaces(id);
 ALTER TABLE experiences ADD COLUMN actor_user_id uuid REFERENCES users(id);
 ALTER TABLE experiences ADD COLUMN token_id uuid REFERENCES personal_access_tokens(id);
@@ -45,33 +42,16 @@ BEGIN
     ELSE 'legacy:' || experience.repository
   END;
 
-  UPDATE sessions session
-  SET workspace_id = source.workspace_id, actor_user_id = legacy_user_id
-  FROM (
-    SELECT session_id, min(workspace_id::text)::uuid AS workspace_id
-    FROM experiences WHERE session_id IS NOT NULL GROUP BY session_id
-  ) source
-  WHERE source.session_id = session.id;
-
-  UPDATE sessions
-  SET workspace_id = (
-    SELECT id FROM workspaces WHERE canonical_key = 'legacy:local/repository'
-  ), actor_user_id = legacy_user_id
-  WHERE workspace_id IS NULL;
-
   UPDATE experience_feedback feedback
   SET workspace_id = experience.workspace_id, actor_user_id = legacy_user_id
   FROM experiences experience
   WHERE feedback.experience_id = experience.id;
 END $$;
 
-ALTER TABLE sessions ALTER COLUMN workspace_id SET NOT NULL;
-ALTER TABLE sessions ALTER COLUMN actor_user_id SET NOT NULL;
 ALTER TABLE experiences ALTER COLUMN workspace_id SET NOT NULL;
 ALTER TABLE experiences ALTER COLUMN actor_user_id SET NOT NULL;
 ALTER TABLE experience_feedback ALTER COLUMN workspace_id SET NOT NULL;
 ALTER TABLE experience_feedback ALTER COLUMN actor_user_id SET NOT NULL;
 
-CREATE INDEX sessions_workspace_updated_idx ON sessions (workspace_id, updated_at DESC);
 CREATE INDEX experiences_workspace_status_type_idx ON experiences (workspace_id, status, type);
 CREATE INDEX feedback_workspace_experience_idx ON experience_feedback (workspace_id, experience_id);

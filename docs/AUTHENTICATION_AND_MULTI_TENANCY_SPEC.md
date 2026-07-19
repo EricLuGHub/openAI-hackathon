@@ -22,7 +22,7 @@ Turn Agent Haderach into a shared hosted service where:
 
 The main security invariant is:
 
-> A user, token, session, or experience must never access or influence a
+> A user, token, or experience must never access or influence a
 > workspace unless its resolved identity is authorized for that workspace.
 
 ## Product model
@@ -32,7 +32,6 @@ User
  ├── Workspace A ↔ Repository A
  │    ├── owner / admins / writers / readers
  │    ├── pending access requests
- │    ├── agent sessions
  │    ├── experiences
  │    ├── feedback
  │    └── questions / incidents
@@ -43,7 +42,7 @@ User
 A workspace is the tenant, authorization, retrieval, and collaboration boundary.
 It maps to exactly one connected Git repository. In this document, "repository"
 means the Git repository, while "workspace" means the Haderach membership,
-settings, sessions, and shared experience surrounding that repository.
+settings and shared experience surrounding that repository.
 
 Organizations may later group workspaces for centralized billing, SSO, policy,
 and administration. Organization membership must remain optional and must not be
@@ -192,7 +191,6 @@ Initial scopes:
 experience:read
 experience:write
 feedback:write
-session:write
 collaboration:read
 collaboration:write
 ```
@@ -220,15 +218,15 @@ private      — reserved for a later release
 ```
 
 Visibility controls discovery, not data access. Discoverable workspaces do not
-expose experience, sessions, member lists, or pending requests to non-members.
+expose experience, member lists, or pending requests to non-members.
 
 ### Workspace roles
 
 ```text
 owner  — full workspace control, ownership transfer, deletion, admins, and members
 admin  — read/write access plus membership and access-request administration
-writer — read access plus sessions, experience, feedback, questions, and answers
-reader — retrieve experience, questions, answers, incidents, and session summaries
+writer — read access plus experience, feedback, questions, and answers
+reader — retrieve experience, questions, answers, and incidents
 ```
 
 Every workspace has exactly one active owner. Only active workspace owners and
@@ -273,7 +271,7 @@ The requester chooses one of two access levels:
 
 ```text
 reader — view and retrieve shared experience
-writer — reader access plus contribute sessions, experience, and feedback
+writer — reader access plus contribute experience and feedback
 ```
 
 Users cannot request `admin` or `owner`. Those roles are granted only by the
@@ -357,7 +355,6 @@ expose other members or private workspace content to the requester.
 | -------------------------------------- | :----: | :----: | :---: | :---: |
 | Retrieve experience and evidence       |  Yes   |  Yes   |  Yes  |  Yes  |
 | View questions, answers, and incidents |  Yes   |  Yes   |  Yes  |  Yes  |
-| Start/update agent sessions            |   No   |  Yes   |  Yes  |  Yes  |
 | Save experience and feedback           |   No   |  Yes   |  Yes  |  Yes  |
 | Ask and answer questions               |   No   |  Yes   |  Yes  |  Yes  |
 | View workspace members                 |  Yes   |  Yes   |  Yes  |  Yes  |
@@ -510,11 +507,6 @@ Required constraints:
 ### Existing-table changes
 
 ```text
-sessions
-  + workspace_id UUID NOT NULL
-  + actor_user_id UUID NOT NULL
-  + token_id UUID NULL
-
 experiences
   + workspace_id UUID NOT NULL
   + created_by_user_id UUID NOT NULL
@@ -528,9 +520,9 @@ experience_feedback
 Questions, answers, and incidents currently share the `experiences` table and
 therefore inherit its workspace scope.
 
-Composite constraints should prevent records from referring to sessions or
-experiences in another workspace. Application checks alone are not sufficient
-for cross-workspace foreign-key integrity.
+Constraints and scoped queries prevent feedback from referring to experience in
+another workspace. Application checks alone are not sufficient for
+cross-workspace integrity.
 
 ## Authorization architecture
 
@@ -606,28 +598,20 @@ Authentication occurs before creating the MCP server or dispatching a tool.
 The resolved user and token are injected into every handler; tool input can
 never override the authenticated user.
 
-### Session binding
+### Direct repository selection
 
-`start_session` gains a repository selector:
+Workspace-aware tools take a repository selector directly:
 
 ```yaml
 repository: github:sindresorhus/p-limit
 task: Implement limit.onIdle()
 revision: 42599eb
-branch: feature/on-idle
 ```
 
-The server resolves the canonical key, authorizes access, and binds the new
-session to that workspace. Subsequent session-scoped tools derive the workspace
-and repository identity from the session ID.
-
-`find_experience` should require either:
-
-- a valid `session_id`; or
-- an explicit repository canonical key.
-
-Using `session_id` is preferred because it reduces repeated tool arguments and
-prevents accidental repository drift during a conversation.
+The server resolves the canonical key and authorizes access for every operation.
+`find_experience`, `save_experience`, and collaboration tools require the
+repository key. This avoids a separate agent-session lifecycle and keeps
+authorization explicit.
 
 `get_experience`, feedback, questions, answers, and incidents must verify that
 the target belongs to the authorized repository even when the caller knows its
@@ -679,7 +663,6 @@ GET  /api/workspaces/:workspaceId
 
 GET  /api/workspaces/:workspaceId/experiences
 POST /api/workspaces/:workspaceId/experiences/search
-GET  /api/workspaces/:workspaceId/sessions
 
 GET    /api/workspaces/:workspaceId/members
 PATCH  /api/workspaces/:workspaceId/members/:userId
@@ -743,8 +726,7 @@ authentication.
 The migration must preserve the existing evaluation data.
 
 1. Create one legacy user.
-2. Create workspace rows for every distinct `experiences.repository` value and
-   for the repository used by existing sessions.
+2. Create workspace rows for every distinct `experiences.repository` value.
 3. Make the legacy user the owner of every migrated workspace and
    create its active owner membership.
 4. Add nullable workspace and actor columns to existing tables.
@@ -769,7 +751,6 @@ Recommended indexes:
 ```text
 experiences(workspace_id, status, type)
 experiences(workspace_id, last_validated_at DESC)
-sessions(workspace_id, updated_at DESC)
 experience_feedback(workspace_id, experience_id)
 workspaces(canonical_key) UNIQUE
 workspace_memberships(workspace_id, user_id) UNIQUE
@@ -822,7 +803,7 @@ Additional controls:
 - implement token generation, hashing, lookup, and revocation;
 - authenticate `/mcp` before tool dispatch;
 - add scopes and repository authorization;
-- bind sessions to repositories;
+- require an authorized repository selector on workspace MCP operations;
 - update every MCP tool and contract;
 - document the bearer-token environment-variable setup for Codex.
 
@@ -933,7 +914,6 @@ database queries enforce scope, and clients cannot choose their own tenant.
 - A repository owner can promote admins and transfer ownership.
 - A workspace rejects experience access from non-members even when it is discoverable.
 - An experience UUID from another repository returns `404`.
-- A session ID cannot be reused across repository boundaries.
 - Cross-repository feedback cannot change ranking.
 - Search never returns records from another repository.
 
@@ -968,8 +948,7 @@ Developer A signs in
 → pastes a public GitHub repository URL and creates Workspace A
 → automatically becomes Workspace A owner
 → creates an MCP token
-→ Codex starts a repository-bound session
-→ Codex saves experience
+→ Codex saves repository-scoped experience
 → Developer B discovers Repository A and requests reader access
 → Developer A sees the request in the Access requests tab and approves it
 → Developer B retrieves experience but cannot write it
@@ -1004,7 +983,7 @@ Developer A signs in
 - approval creates an active membership exactly once and rejection records an
   auditable decision;
 - owners can transfer ownership and cannot leave before doing so;
-- every experience, session, and feedback record has an immutable repository
+- every experience and feedback record has an immutable repository
   scope;
 - search, detail retrieval, feedback, and collaboration pass isolation tests;
 - the dashboard can switch workspaces without leaking cached data;

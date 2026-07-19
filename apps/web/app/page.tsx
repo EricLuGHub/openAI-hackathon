@@ -29,15 +29,7 @@ type Experience = {
   createdAt: string;
   lastValidatedAt?: string;
 };
-type Session = {
-  id: string;
-  task: string;
-  status: string;
-  revision: string;
-  startedAt: string;
-  outcome?: string;
-};
-type View = "memory" | "sessions" | "signals" | "access";
+type View = "memory" | "signals" | "access";
 type Workspace = {
   id: string;
   canonical_key: string;
@@ -98,7 +90,6 @@ function BrandLogo({ compact = false }: { compact?: boolean }) {
 
 export default function Dashboard() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
   const [selected, setSelected] = useState<Experience | null>(null);
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
@@ -135,7 +126,6 @@ export default function Dashboard() {
         workspaceRows.find((workspace) => workspace.role);
       if (!selected?.role) {
         setExperiences([]);
-        setSessions([]);
         setLive(true);
         return;
       }
@@ -159,17 +149,11 @@ export default function Dashboard() {
       );
       if (membersResponse.ok) setMembers(await membersResponse.json());
       const repository = encodeURIComponent(selected.canonical_key);
-      const [e, s] = await Promise.all([
-        fetch(`${API}/api/experiences?repository=${repository}`, {
-          credentials: "include",
-        }),
-        fetch(`${API}/api/sessions?repository=${repository}`, {
-          credentials: "include",
-        }),
-      ]);
-      if (!e.ok || !s.ok) throw new Error("offline");
+      const e = await fetch(`${API}/api/experiences?repository=${repository}`, {
+        credentials: "include",
+      });
+      if (!e.ok) throw new Error("offline");
       const experienceRows = await e.json();
-      const sessionRows = await s.json();
       setExperiences(
         experienceRows.map((row: Record<string, unknown>) => ({
           ...row,
@@ -184,12 +168,6 @@ export default function Dashboard() {
           services: row.services ?? [],
           createdAt: row.createdAt ?? row.created_at,
           lastValidatedAt: row.lastValidatedAt ?? row.last_validated_at,
-        })),
-      );
-      setSessions(
-        sessionRows.map((row: Record<string, unknown>) => ({
-          ...row,
-          startedAt: row.startedAt ?? row.created_at,
         })),
       );
       setLive(true);
@@ -329,13 +307,6 @@ export default function Dashboard() {
             ⌁<small>Memory</small>
           </button>
           <button
-            className={view === "sessions" ? "active" : ""}
-            onClick={() => setView("sessions")}
-            aria-label="Agent sessions"
-          >
-            ◫<small>Sessions</small>
-          </button>
-          <button
             className={view === "signals" ? "active" : ""}
             onClick={() => setView("signals")}
             aria-label="Questions and incidents"
@@ -439,10 +410,7 @@ export default function Dashboard() {
           <article className="signal">
             <label>NETWORK</label>
             <strong>{live ? "LIVE" : "OFFLINE"}</strong>
-            <small>
-              {sessions.filter((s) => s.status === "active").length} active
-              agent sessions
-            </small>
+            <small>{experiences.length} repository-scoped entries</small>
           </article>
         </div>
         {view === "memory" && (
@@ -534,26 +502,26 @@ export default function Dashboard() {
                 <span>AGENT ACTIVITY</span>
                 <i className={live ? "online" : ""} />
               </div>
-              {sessions.slice(0, 6).map((s) => (
-                <article key={s.id}>
+              {experiences.slice(0, 6).map((entry) => (
+                <article key={entry.id}>
                   <div className="agent">A</div>
                   <div>
-                    <b>{s.task}</b>
+                    <b>{entry.taskSummary}</b>
                     <p>
-                      {s.status} · {s.revision.slice(0, 8)}
+                      {entry.type} · {entry.revision.slice(0, 8)}
                     </p>
                   </div>
                   <time>
-                    {new Date(s.startedAt).toLocaleTimeString([], {
+                    {new Date(entry.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </time>
                 </article>
               ))}
-              {!sessions.length && (
+              {!experiences.length && (
                 <div className="empty small">
-                  Sessions appear when agents connect.
+                  Agent contributions appear as experiences are saved.
                 </div>
               )}
               <div className="flow">
@@ -570,37 +538,6 @@ export default function Dashboard() {
               </div>
             </section>
           </div>
-        )}
-        {view === "sessions" && (
-          <section className="view-panel">
-            <div className="section-title">
-              <span>ALL AGENT SESSIONS</span>
-              <small>{sessions.length} RECORDED</small>
-            </div>
-            <div className="session-table">
-              {sessions.map((s) => (
-                <article key={s.id}>
-                  <div className="agent">A</div>
-                  <div>
-                    <span className={`status-dot ${s.status}`} />{" "}
-                    <b>{s.task}</b>
-                    <p>
-                      {s.outcome ||
-                        "Work in progress—no final outcome recorded."}
-                    </p>
-                  </div>
-                  <div className="session-meta">
-                    <span>{s.status}</span>
-                    <code>{s.revision.slice(0, 8)}</code>
-                    <time>{new Date(s.startedAt).toLocaleString()}</time>
-                  </div>
-                </article>
-              ))}
-              {!sessions.length && (
-                <div className="empty">No sessions have connected yet.</div>
-              )}
-            </div>
-          </section>
         )}
         {view === "signals" && (
           <section className="view-panel">

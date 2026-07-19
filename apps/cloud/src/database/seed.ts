@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { ExperienceRepository } from "../services/experience-repository.js";
 import type { AuthContext } from "../auth/personal-tokens.js";
 
@@ -21,25 +20,13 @@ const auth: AuthContext = {
     "experience:read",
     "experience:write",
     "feedback:write",
-    "session:write",
     "collaboration:read",
     "collaboration:write",
   ],
 };
-const sessionId = randomUUID();
-await repository.startSession(
-  {
-    sessionId,
-    repository: "legacy:local/repository",
-    task: "Diagnose checkout integration pipeline",
-    revision: "abc123",
-    branch: "main",
-  },
-  auth,
-);
 await repository.createExperience(
   {
-    sessionId,
+    repository: "legacy:local/repository",
     type: "workflow",
     taskSummary:
       "Diagnose checkout integration pipeline Redis connection failure",

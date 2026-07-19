@@ -5,7 +5,6 @@ import type {
   ExperienceInput,
   FeedbackInput,
   FindExperienceInput,
-  SessionInput,
 } from "@haderach/contracts";
 import * as schema from "../database/schema.js";
 import type { AuthContext } from "../auth/personal-tokens.js";
@@ -99,70 +98,12 @@ export class ExperienceRepository {
     return String(workspace.id);
   }
 
-  private async workspaceForSession(auth: AuthContext, sessionId: string) {
-    const [workspace] = await this.client`
-      SELECT session.workspace_id
-      FROM sessions session
-      JOIN workspace_memberships membership ON membership.workspace_id = session.workspace_id
-      WHERE session.id = ${sessionId}
-        AND membership.user_id = ${auth.userId}
-        AND membership.status = 'active'
-        AND membership.role IN ('owner', 'admin', 'writer')`;
-    if (!workspace) throw new Error("Session not found or access denied");
-    return String(workspace.workspace_id);
-  }
-
-  async startSession(input: SessionInput, auth: AuthContext) {
-    const id = input.sessionId ?? randomUUID();
+  async createExperience(input: ExperienceInput, auth: AuthContext) {
     const workspaceId = await this.workspaceForRepository(
       auth,
       input.repository,
       true,
     );
-    const [row] = await this.client`
-      INSERT INTO sessions (id, workspace_id, actor_user_id, token_id, task, revision, branch, worktree)
-      VALUES (${id}, ${workspaceId}, ${auth.userId}, ${auth.tokenId}, ${input.task}, ${input.revision}, ${input.branch ?? null}, ${input.worktree ?? null})
-      ON CONFLICT (id) DO UPDATE SET
-        task = EXCLUDED.task, revision = EXCLUDED.revision, branch = EXCLUDED.branch,
-        worktree = EXCLUDED.worktree, updated_at = now()
-      WHERE sessions.workspace_id = EXCLUDED.workspace_id
-      RETURNING *`;
-    if (!row) throw new Error("Session belongs to another workspace");
-    return row;
-  }
-
-  async updateSession(
-    id: string,
-    state: {
-      status?: string;
-      currentState?: string;
-      outcome?: string;
-      finished?: boolean;
-    },
-    auth: AuthContext,
-  ) {
-    const [row] = await this.client`
-      UPDATE sessions SET
-        status = COALESCE(${state.status ?? null}, status),
-        current_state = COALESCE(${state.currentState ?? null}, current_state),
-        outcome = COALESCE(${state.outcome ?? null}, outcome),
-        finished_at = CASE WHEN ${state.finished ?? false} THEN now() ELSE finished_at END,
-        updated_at = now()
-      WHERE id = ${id}
-        AND workspace_id IN (
-          SELECT workspace_id FROM workspace_memberships
-          WHERE user_id = ${auth.userId} AND status = 'active'
-            AND role IN ('owner', 'admin', 'writer')
-        )
-      RETURNING *`;
-    if (!row) throw new Error("Session not found or access denied");
-    return row;
-  }
-
-  async createExperience(input: ExperienceInput, auth: AuthContext) {
-    if (!input.sessionId)
-      throw new Error("sessionId is required to save workspace experience");
-    const workspaceId = await this.workspaceForSession(auth, input.sessionId);
     const id = randomUUID();
     const ranking = calculateRanking({
       successfulUses: 0,
@@ -174,12 +115,12 @@ export class ExperienceRepository {
     const textArray = (values: string[]) => this.client.array(values, 25);
     const [row] = await this.client`
       INSERT INTO experiences (
-        id, workspace_id, actor_user_id, token_id, session_id, type, repository, task_summary, summary, detail, steps,
+        id, workspace_id, actor_user_id, token_id, type, repository, task_summary, summary, detail, steps,
         paths, services, tools, error_signatures, keywords, related_terms, aliases,
         evidence, outcome_status, tests, revision, confidence, status, ranking_score
       ) VALUES (
-        ${id}, ${workspaceId}, ${auth.userId}, ${auth.tokenId}, ${input.sessionId}, ${input.type},
-        ${(await this.client`SELECT canonical_key FROM workspaces WHERE id = ${workspaceId}`)[0]?.canonical_key as string}, ${input.taskSummary},
+        ${id}, ${workspaceId}, ${auth.userId}, ${auth.tokenId}, ${input.type},
+        ${input.repository}, ${input.taskSummary},
         ${input.content.summary}, ${input.content.detail ?? null}, ${textArray(input.content.steps)},
         ${textArray(input.scope.paths)}, ${textArray(input.scope.services)},
         ${textArray(input.scope.tools)}, ${textArray(input.scope.errorSignatures)},
@@ -212,15 +153,10 @@ export class ExperienceRepository {
     input: FindExperienceInput,
     auth: AuthContext,
   ): Promise<ExperienceCard[]> {
-    const workspaceId = input.sessionId
-      ? await this.workspaceForSession(auth, input.sessionId)
-      : input.repository
-        ? await this.workspaceForRepository(auth, input.repository)
-        : undefined;
-    if (!workspaceId)
-      throw new Error(
-        "sessionId or repository is required for workspace search",
-      );
+    const workspaceId = await this.workspaceForRepository(
+      auth,
+      input.repository,
+    );
     const queryText = [input.task, input.error, ...input.keywords]
       .filter(Boolean)
       .join(" ");
@@ -288,16 +224,11 @@ export class ExperienceRepository {
         WHERE experience.id = ${input.experienceId}
           AND membership.user_id = ${auth.userId}
           AND membership.status = 'active'
-          AND membership.role IN ('owner', 'admin', 'writer')
-          AND (${input.sessionId == null} OR EXISTS (
-            SELECT 1 FROM sessions session
-            WHERE session.id = ${input.sessionId ?? null}
-              AND session.workspace_id = experience.workspace_id
-          ))`;
+          AND membership.role IN ('owner', 'admin', 'writer')`;
       if (!target) throw new Error("Experience not found or access denied");
       await tx`INSERT INTO experience_feedback
-        (id, workspace_id, actor_user_id, token_id, experience_id, session_id, relevant, still_valid, outcome, evidence)
-        VALUES (${randomUUID()}, ${target.workspace_id as string}, ${auth.userId}, ${auth.tokenId}, ${input.experienceId}, ${input.sessionId ?? null},
+        (id, workspace_id, actor_user_id, token_id, experience_id, relevant, still_valid, outcome, evidence)
+        VALUES (${randomUUID()}, ${target.workspace_id as string}, ${auth.userId}, ${auth.tokenId}, ${input.experienceId},
           ${input.relevant}, ${input.stillValid}, ${input.outcome}, ${input.evidence ?? null})`;
       const [current] =
         await tx`SELECT * FROM experiences WHERE id = ${input.experienceId} FOR UPDATE`;
@@ -335,12 +266,6 @@ export class ExperienceRepository {
     const workspaceId = await this.workspaceForRepository(auth, repository);
     return this
       .client`SELECT * FROM experiences WHERE workspace_id = ${workspaceId} ORDER BY created_at DESC LIMIT ${limit}`;
-  }
-
-  async listSessions(auth: AuthContext, repository: string, limit = 50) {
-    const workspaceId = await this.workspaceForRepository(auth, repository);
-    return this
-      .client`SELECT * FROM sessions WHERE workspace_id = ${workspaceId} ORDER BY updated_at DESC LIMIT ${limit}`;
   }
 }
 

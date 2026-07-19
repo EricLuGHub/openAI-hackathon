@@ -5,7 +5,6 @@ export const tokenScopes = [
   "experience:read",
   "experience:write",
   "feedback:write",
-  "session:write",
   "collaboration:read",
   "collaboration:write",
 ] as const;

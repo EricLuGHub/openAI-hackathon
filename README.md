@@ -77,7 +77,7 @@ This is an initial proof rather than a statistically significant benchmark. The 
 
 ## How it works
 
-- An agent opens a task-scoped session through MCP.
+- An agent searches a workspace directly through MCP.
 - Retrieval returns a ranked, token-budgeted set of compact experience cards.
 - The agent expands only a promising entry, verifies it against current code, and reports whether it helped.
 - Successful reuse raises the entry's ranking; stale or failed advice is demoted.
@@ -97,9 +97,9 @@ Browser ─────── REST API ──────┘        │
 | ------------------------- | --------------------------------------------------------------- |
 | `apps/cloud/src/api`      | REST endpoints used by the dashboard                            |
 | `apps/cloud/src/mcp`      | Remote MCP tools plus the optional stdio transport              |
-| `apps/cloud/src/services` | Experience retrieval, ranking, feedback, and session logic      |
+| `apps/cloud/src/services` | Experience retrieval, ranking, feedback, and workspace access   |
 | `apps/cloud/src/database` | PostgreSQL schema, migration, and seed tooling                  |
-| `apps/web`                | Live experience, reuse, and session dashboard                   |
+| `apps/web`                | Live experience, reuse, workspace, and access dashboard         |
 | `packages/contracts`      | Schemas and types shared across application boundaries          |
 | `workspace`               | Central repository, worktree, task, and agent operating runtime |
 | `docs`                    | Product and implementation specifications                       |
@@ -147,12 +147,15 @@ AGENT_HADERACH_TOKEN = "ahd_pat_..."
 ```
 
 Both transports require a personal MCP token. The raw token is displayed only
-once; the database stores its SHA-256 digest. Every MCP session is bound to an
-authorized workspace, and every experience query is workspace-scoped.
+once; the database stores its SHA-256 digest. Every MCP experience operation
+selects an authorized repository workspace directly.
 
 ## MCP workflow
 
-The main tools are `start_session`, `find_experience`, `get_experience`, `save_experience`, `record_experience_feedback`, `update_session`, and `finish_session`. Collaboration tools add repository-scoped questions, answers, and service incidents.
+The main tools are `find_experience`, `get_experience`, `save_experience`, and
+`record_experience_feedback`. Collaboration tools add repository-scoped
+questions, answers, and service incidents. There is no required agent-session
+lifecycle.
 
 Experience is progressive: search exposes a short summary and score; `get_experience` exposes cleaned detail only when requested. Raw chain-of-thought is never required or stored.
 

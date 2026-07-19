@@ -5,7 +5,6 @@ import {
   experienceInputSchema,
   feedbackInputSchema,
   findExperienceSchema,
-  sessionInputSchema,
 } from "@haderach/contracts";
 import type { AuthContext, TokenScope } from "../auth/personal-tokens.js";
 
@@ -22,23 +21,6 @@ export function createMcpServer(
     if (!auth.scopes.includes(scope))
       throw new Error(`Token is missing required scope: ${scope}`);
   };
-
-  server.registerTool(
-    "start_session",
-    {
-      title: "Start Agent Haderach session",
-      description:
-        "Register a repository task session before beginning meaningful work.",
-      inputSchema: sessionInputSchema.shape,
-      annotations: { readOnlyHint: false, idempotentHint: true },
-    },
-    async (input) => {
-      authorize("session:write");
-      return jsonResult(
-        await repository.startSession(sessionInputSchema.parse(input), auth),
-      );
-    },
-  );
 
   server.registerTool(
     "find_experience",
@@ -85,7 +67,7 @@ export function createMcpServer(
     {
       title: "Save reusable experience",
       description:
-        "Save one structured experience after checking for existing duplicates. A session may save many entries, one, or none.",
+        "Save one structured, repository-scoped experience after checking for existing duplicates.",
       inputSchema: experienceInputSchema.shape,
       annotations: { readOnlyHint: false, idempotentHint: false },
     },
@@ -117,57 +99,8 @@ export function createMcpServer(
     },
   );
 
-  server.registerTool(
-    "update_session",
-    {
-      title: "Update session",
-      description:
-        "Persist current task status, findings, blocker, or outcome.",
-      inputSchema: {
-        sessionId: z.string().uuid(),
-        status: z.string().optional(),
-        currentState: z.string().max(10_000).optional(),
-        outcome: z.string().max(5_000).optional(),
-      },
-      annotations: { readOnlyHint: false, idempotentHint: true },
-    },
-    async ({ sessionId, ...state }) => {
-      authorize("session:write");
-      return jsonResult(await repository.updateSession(sessionId, state, auth));
-    },
-  );
-
-  server.registerTool(
-    "finish_session",
-    {
-      title: "Finish or hand off session",
-      description:
-        "Close a completed session or persist its final handoff state.",
-      inputSchema: {
-        sessionId: z.string().uuid(),
-        status: z.enum(["completed", "blocked", "handed_off"]),
-        outcome: z.string().max(10_000),
-      },
-      annotations: { readOnlyHint: false, idempotentHint: true },
-    },
-    async ({ sessionId, status, outcome }) => {
-      authorize("session:write");
-      return jsonResult(
-        await repository.updateSession(
-          sessionId,
-          {
-            status,
-            outcome,
-            finished: true,
-          },
-          auth,
-        ),
-      );
-    },
-  );
-
   const collaborationSchema = {
-    sessionId: z.string().uuid(),
+    repository: z.string().min(1),
     taskSummary: z.string().min(1),
     summary: z.string().min(1),
     detail: z.string().optional(),
@@ -188,7 +121,7 @@ export function createMcpServer(
     return repository.createExperience(
       {
         type,
-        sessionId: input.sessionId,
+        repository: input.repository,
         taskSummary: input.taskSummary,
         content: { summary: input.summary, detail: input.detail, steps: [] },
         scope: {

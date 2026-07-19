@@ -14,8 +14,7 @@ repository experience without exposing database details or returning excessive t
 The MCP server:
 
 - validates tool inputs and outputs;
-- associates calls with the configured repository;
-- manages session IDs;
+- resolves and authorizes the repository supplied to each workspace operation;
 - calls the cloud API;
 - returns compact, token-budgeted results;
 - reports reuse, outcomes, incidents, questions, and answers;
@@ -26,23 +25,13 @@ chooses whether new work deserves an experience entry.
 
 ## Proposed tools
 
-### `start_session`
-
-Registers a session and retrieves initial relevant context.
-
-```yaml
-task: Diagnose the checkout integration pipeline
-session_id: optional-existing-id
-revision: def456
-branch: fix/checkout-pipeline
-```
-
 ### `find_experience`
 
 Searches prior workflows, lessons, pitfalls, summaries, handoffs, incidents,
 questions, and answers.
 
 ```yaml
+repository: github:acme/checkout
 task: Diagnose the checkout integration pipeline
 revision: def456
 paths: [services/checkout/**]
@@ -70,8 +59,10 @@ detail: summary | full
 Creates a new structured entry after the agent has searched for duplicates.
 
 ```yaml
-session_id: session_456
-experience: {}
+repository: github:acme/checkout
+type: workflow
+task_summary: Diagnose the checkout integration pipeline
+content: {}
 ```
 
 The experience object follows `CLOUD_EXPERIENCE_STORE_SPEC.md`.
@@ -81,7 +72,6 @@ The experience object follows `CLOUD_EXPERIENCE_STORE_SPEC.md`.
 Reports whether retrieved experience was useful and valid.
 
 ```yaml
-session_id: session_456
 experience_id: exp_123
 relevant: true
 still_valid: true
@@ -90,14 +80,6 @@ evidence: Jenkins build 1861
 ```
 
 Mere retrieval does not increase an entry's score.
-
-### `update_session`
-
-Updates task state, current findings, blockers, or worktree information.
-
-### `finish_session`
-
-Records the final result and closes or hands off the session.
 
 ### `publish_question`
 
@@ -139,7 +121,7 @@ summary, keywords, services, and error signatures.
 The server should return structured errors for:
 
 - invalid schema;
-- unknown session;
+- unknown or unauthorized workspace;
 - unavailable cloud service;
 - missing static secret;
 - record not found;
@@ -158,14 +140,12 @@ scopes, workspaces, and membership-based repository authorization.
 
 - Remote Streamable HTTP is the initial hosted transport.
 - A local stdio bridge is optional.
-- Local development may run without authentication.
-- Public deployment uses one static secret from an environment variable.
+- Both remote HTTP and local stdio transports require a personal MCP token.
 - Secrets are never returned in MCP content.
 
 ## Open decisions
 
 1. Which tools should be combined to keep the surface smaller?
-2. Which session operations are mandatory at start and completion?
-3. Should incident recovery use `report_incident` or a separate tool?
-4. How should duplicate candidates be presented to the agent?
-5. Which operations require user approval in Codex?
+2. Should incident recovery use `report_incident` or a separate tool?
+3. How should duplicate candidates be presented to the agent?
+4. Which operations require user approval in Codex?

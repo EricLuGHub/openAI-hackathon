@@ -452,50 +452,6 @@ label,
   min-height: 430px;
   animation: rise 0.3s ease both;
 }
-.session-table article {
-  display: grid;
-  grid-template-columns: 42px minmax(260px, 1fr) auto;
-  gap: 16px;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid var(--line);
-}
-.session-table article b {
-  font-size: 13px;
-}
-.session-table article p {
-  margin: 7px 0 0;
-  color: #858a80;
-  font-size: 11px;
-}
-.status-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 7px;
-  background: var(--amber);
-}
-.status-dot.completed {
-  background: var(--acid);
-  box-shadow: 0 0 8px #c8ff5566;
-}
-.session-meta {
-  min-width: 220px;
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 8px 14px;
-  justify-items: end;
-  font: 8px DM Mono;
-  color: #71766d;
-  text-transform: uppercase;
-}
-.session-meta time {
-  grid-column: 1 / -1;
-}
-.session-meta code {
-  color: #a8ada3;
-}
 .signal-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
@@ -773,13 +729,6 @@ label,
   }
   .score {
     display: none;
-  }
-  .session-table article {
-    grid-template-columns: 34px 1fr;
-  }
-  .session-meta {
-    grid-column: 2;
-    justify-items: start;
   }
   .signal-grid {
     grid-template-columns: 1fr;

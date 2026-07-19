@@ -1,22 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
-CREATE TABLE IF NOT EXISTS sessions (
-  id uuid PRIMARY KEY,
-  task text NOT NULL,
-  revision text NOT NULL,
-  branch text,
-  worktree text,
-  status text NOT NULL DEFAULT 'active',
-  current_state text,
-  outcome text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  finished_at timestamptz
-);
-
 CREATE TABLE IF NOT EXISTS experiences (
   id uuid PRIMARY KEY,
-  session_id uuid REFERENCES sessions(id) ON DELETE SET NULL,
   type text NOT NULL,
   repository text NOT NULL DEFAULT 'local/repository',
   task_summary text NOT NULL,
@@ -55,7 +40,6 @@ CREATE INDEX IF NOT EXISTS experiences_status_idx ON experiences(status, type);
 CREATE TABLE IF NOT EXISTS experience_feedback (
   id uuid PRIMARY KEY,
   experience_id uuid NOT NULL REFERENCES experiences(id) ON DELETE CASCADE,
-  session_id uuid REFERENCES sessions(id) ON DELETE SET NULL,
   relevant boolean NOT NULL,
   still_valid boolean NOT NULL,
   outcome text NOT NULL,

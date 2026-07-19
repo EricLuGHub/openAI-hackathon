@@ -45,6 +45,7 @@ export const evidenceSchema = z.object({
 });
 
 export const experienceInputSchema = z.object({
+  repository: z.string().min(1),
   type: z.enum(experienceTypes),
   taskSummary: z.string().min(1).max(2_000),
   content: experienceContentSchema,
@@ -58,7 +59,6 @@ export const experienceInputSchema = z.object({
   revision: z.string().min(1),
   confidence: z.enum(["candidate", "observed", "verified"]).default("observed"),
   status: z.enum(experienceStatuses).default("current"),
-  sessionId: z.string().uuid().optional(),
 });
 
 export type ExperienceInput = z.infer<typeof experienceInputSchema>;

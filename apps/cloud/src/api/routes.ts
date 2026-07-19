@@ -3,7 +3,6 @@ import {
   experienceInputSchema,
   feedbackInputSchema,
   findExperienceSchema,
-  sessionInputSchema,
 } from "@haderach/contracts";
 import type { ExperienceRepository } from "../services/experience-repository.js";
 import {
@@ -89,24 +88,6 @@ export function createApi(
       ),
     ),
   );
-  api.get("/sessions", async (c) =>
-    c.json(
-      await repository.listSessions(
-        c.get("auth"),
-        c.req.query("repository") ?? "",
-      ),
-    ),
-  );
-  api.post("/sessions", async (c) =>
-    c.json(
-      await repository.startSession(
-        sessionInputSchema.parse(await c.req.json()),
-        c.get("auth"),
-      ),
-      201,
-    ),
-  );
-
   api.get("/workspaces", async (c) =>
     c.json(await workspaces.list(c.get("auth"), c.req.query("q") ?? "")),
   );
