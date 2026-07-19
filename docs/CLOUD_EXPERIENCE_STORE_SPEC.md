@@ -35,6 +35,9 @@ task_summary: Validate checkout deployment
 
 content:
   summary: Deploy to staging and verify payment health in Dynatrace.
+  detail: |
+    A longer account of the investigation, actions, reasoning conclusions,
+    important outputs, exceptions, and validation results.
   steps:
     - Trigger the Jenkins deployment.
     - Wait for the integration stage.
@@ -70,6 +73,24 @@ last_validated_at: 2026-07-18T14:00:00Z
 
 Not every experience type requires every field. The shared fields should remain
 consistent enough to support filtering and ranking.
+
+## Summary and detailed content
+
+Every experience can have two content levels:
+
+- **Summary:** a compact, independently useful description used for search,
+  ranking, and the initial context response.
+- **Detail:** a significantly larger text containing the complete useful account
+  of what happened, how conclusions were reached, important outputs, caveats,
+  and supporting context.
+
+Search results return summaries by default. If an agent finds one entry highly
+relevant, it can request the detailed content without loading every other
+entry's details.
+
+The detailed content may be large, but it should still be a cleaned task record,
+not private chain-of-thought or an unfiltered raw transcript. Original logs,
+builds, code, and other evidence should be referenced separately where possible.
 
 ## Granularity
 
@@ -207,6 +228,21 @@ get_experience(experience_id)
 get_experience_evidence(experience_id)
 ```
 
+`get_experience` should support a detail level:
+
+```text
+get_experience(experience_id, detail = summary | full)
+```
+
+This creates a context funnel:
+
+```text
+Many indexed entries
+→ a few compact summaries
+→ one selected full entry
+→ specific external evidence when required
+```
+
 ## Feedback loop
 
 After using an experience, an agent may report:
@@ -262,4 +298,3 @@ superseded
 6. How should code changes invalidate or downgrade experience?
 7. How much agent feedback should be automatic versus explicitly requested?
 8. What access boundaries apply across users, repositories, and organizations?
-
