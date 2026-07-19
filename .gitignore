@@ -153,6 +153,7 @@ activemq-data/
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
 .agent-haderach-runtime/
 .envrc
 .venv

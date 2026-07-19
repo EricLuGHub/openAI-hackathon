@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: agent_haderach
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d agent_haderach"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:55432/agent_haderach
+      NEXT_PUBLIC_AGENT_HADERACH_API_URL: http://127.0.0.1:3001
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Build production applications
+        run: pnpm build
+
+      - name: Apply database migration
+        run: pnpm db:push
+
+      - name: Start cloud service
+        run: pnpm --filter @haderach/cloud start > /tmp/haderach-cloud.log 2>&1 &
+
+      - name: Wait for cloud service
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3001/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/haderach-cloud.log
+          exit 1
+
+      - name: Verify MCP tools
+        run: |
+          response=$(curl --fail --silent \
+            --request POST http://127.0.0.1:3001/mcp \
+            --header 'Content-Type: application/json' \
+            --header 'Accept: application/json, text/event-stream' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}')
+          node -e 'const result = JSON.parse(process.argv[1]); if (result.result?.tools?.length !== 11) { throw new Error(`Expected 11 MCP tools, received ${result.result?.tools?.length}`); }' "$response"
+
+      - name: Print cloud logs on failure
+        if: failure()
+        run: cat /tmp/haderach-cloud.log 2>/dev/null || true

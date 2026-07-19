@@ -1,12 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { ExperienceRepository } from "@haderach/database";
+import { ExperienceRepository } from "../services/experience-repository.js";
 import {
   experienceInputSchema,
   feedbackInputSchema,
   findExperienceSchema,
   sessionInputSchema,
-} from "@haderach/schemas";
+} from "@haderach/contracts";
 
 const jsonResult = (value: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],

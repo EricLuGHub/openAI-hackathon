@@ -1,5 +1,5 @@
 {
-  "name": "@haderach/database",
+  "name": "@haderach/contracts",
   "version": "0.1.0",
   "type": "module",
   "exports": "./src/index.ts",
@@ -7,13 +7,9 @@
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
-    "db:push": "tsx src/migrate.ts",
-    "db:seed": "tsx src/seed.ts"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@haderach/schemas": "workspace:*",
-    "drizzle-orm": "^0.45.2",
-    "postgres": "^3.4.7"
+    "zod": "^3.25.76"
   }
 }

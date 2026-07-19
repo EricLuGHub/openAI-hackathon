@@ -24,23 +24,26 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@24.13.3)(tsx@4.23.1)
 
-  apps/server:
+  apps/cloud:
     dependencies:
-      '@haderach/database':
+      '@haderach/contracts':
         specifier: workspace:*
-        version: link:../../packages/database
-      '@haderach/schemas':
-        specifier: workspace:*
-        version: link:../../packages/schemas
+        version: link:../../packages/contracts
       '@hono/node-server':
         specifier: ^1.19.1
         version: 1.19.14(hono@4.12.31)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@3.25.76)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
       hono:
         specifier: ^4.12.31
         version: 4.12.31
+      postgres:
+        specifier: ^3.4.7
+        version: 3.4.9
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -73,19 +76,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(tsx@4.23.1)
 
-  packages/database:
-    dependencies:
-      '@haderach/schemas':
-        specifier: workspace:*
-        version: link:../schemas
-      drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(postgres@3.4.9)
-      postgres:
-        specifier: ^3.4.7
-        version: 3.4.9
-
-  packages/schemas:
+  packages/contracts:
     dependencies:
       zod:
         specifier: ^3.25.76

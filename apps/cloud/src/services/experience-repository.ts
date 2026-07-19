@@ -6,8 +6,8 @@ import type {
   FeedbackInput,
   FindExperienceInput,
   SessionInput,
-} from "@haderach/schemas";
-import * as schema from "./schema.js";
+} from "@haderach/contracts";
+import * as schema from "../database/schema.js";
 
 export type ExperienceCard = {
   id: string;
@@ -255,4 +255,4 @@ export class ExperienceRepository {
   }
 }
 
-export * from "./schema.js";
+export * from "../database/schema.js";

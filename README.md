@@ -1,12 +1,81 @@
 # Agent Haderach
 
-**A shared, self-validating experience layer for coding agents.**
+**Connect developers through the experience of their coding agents.**
 
-Coding agents repeatedly rediscover the same repository workflows, failure modes, and architectural facts. Agent Haderach lets one agent leave compact, evidenced experience that later agents can retrieve, verify, and reinforce—without filling the repository with ever-growing Markdown logs.
+When one developer's agent investigates a difficult failure, discovers the right testing workflow, or learns an architectural constraint, that knowledge usually disappears with the session. The next developer's agent starts over: reading the same files, trying the same dead ends, and spending the same tokens.
+
+Agent Haderach gives every agent working on a repository access to the useful experience of the agents that came before it.
 
 The name references Dune's Kwisatz Haderach: an agent can draw on the useful experience of agents that worked before it.
 
-## What the demo proves
+## The idea
+
+Developers already share code through Git, but their agents do not share what they learned while working on that code.
+
+Agent Haderach is a repository-scoped experience database that agents access through MCP. After meaningful work, an agent can save structured entries such as:
+
+- **Workflows:** reliable sequences for testing, deploying, or diagnosing a system.
+- **Lessons:** architectural facts and conclusions discovered during investigation.
+- **Pitfalls:** plausible approaches that failed and why they were wrong.
+- **Incidents:** recent evidence that an external platform or service is unavailable.
+- **Questions and answers:** blockers that another agent may be able to resolve.
+
+When another developer starts a related task, their agent searches this shared experience first. It receives a small ranked set of summaries, expands only the promising entries, verifies them against the current revision, and reports whether they helped.
+
+```text
+Developer A's agent investigates a difficult problem
+                       ↓
+       saves a compact, evidenced experience
+                       ↓
+Developer B's agent encounters a related task
+                       ↓
+        retrieves, verifies, and reuses it
+                       ↓
+ successful knowledge rises; stale knowledge falls
+```
+
+## Why a database instead of more Markdown?
+
+Markdown is excellent for stable instructions such as contribution rules and coding conventions. It is not a scalable store for the growing volume of granular context produced by many agents and developers.
+
+We do not store all application data in Markdown and `rg` through it—we introduce databases when the information becomes too numerous, dynamic, and interconnected. Agent context is reaching the same transition.
+
+Putting every investigation into repository files would create:
+
+- increasingly large and noisy search results;
+- pull requests for every finding, correction, or status update;
+- no ranking based on whether information actually helped;
+- no clean lifecycle for stale, contradicted, or superseded knowledge;
+- large context files that every agent must repeatedly read.
+
+Agent Haderach stores each finding as a granular record with retrieval terms, repository scope, revision, confidence, evidence, freshness, and reuse feedback. Search returns only the highest-signal summaries within a token budget. Full detail is loaded only when an agent asks for it.
+
+The database complements repository documentation; it does not replace it.
+
+## Example
+
+A deployment pipeline fails with a Redis connection error. Without shared experience, an agent may inspect the pipeline definition, service configuration, worker environment, logs, and test setup from scratch.
+
+With Agent Haderach, it first finds a verified entry from another developer's agent:
+
+> The default Jenkins worker omits the Redis sidecar. Use the `integration-worker` template, rerun the pipeline, then execute the checkout smoke test.
+
+The new agent verifies that the entry still applies, tries the workflow, and records the result. If it succeeds, the entry becomes more useful and ranks higher for future agents. If it has become stale, its ranking and status are updated.
+
+## What we proved
+
+We tested the idea with two clean Codex sessions on the open-source [`sindresorhus/p-limit`](https://github.com/sindresorhus/p-limit) repository. Both agents started from the same revision and implemented the same new `limit.onIdle()` feature.
+
+- Agent A investigated the repository and persisted a workflow, lesson, and pitfall.
+- Agent B received no patch or conversation—only the structured entries through MCP.
+- Agent B produced the same correct runtime implementation.
+- Agent B added an additional regression test based on the retrieved pitfall.
+- Agent B used **45.6% fewer non-cached input tokens** and **20.1% fewer total input tokens**.
+- Successful reuse automatically increased the entries' ranking scores.
+
+This is an initial proof rather than a statistically significant benchmark. The complete methodology and limitations are in [the evaluation report](docs/EVALUATION_RESULTS.md).
+
+## How it works
 
 - An agent opens a task-scoped session through MCP.
 - Retrieval returns a ranked, token-budgeted set of compact experience cards.
@@ -24,14 +93,16 @@ Browser ─────── REST API ──────┘        │
                                         └── deterministic ranking + token budgets
 ```
 
-| Component             | Purpose                                               |
-| --------------------- | ----------------------------------------------------- |
-| `apps/server`         | REST API and MCP tools over Streamable HTTP or stdio  |
-| `apps/web`            | Live experience, reuse, and session dashboard         |
-| `packages/database`   | PostgreSQL persistence, search, ranking, and feedback |
-| `packages/schemas`    | Shared Zod contracts                                  |
-| `templates/workspace` | Central repository/worktree/task operating contract   |
-| `docs`                | Product and implementation specifications             |
+| Component                 | Purpose                                                         |
+| ------------------------- | --------------------------------------------------------------- |
+| `apps/cloud/src/api`      | REST endpoints used by the dashboard                            |
+| `apps/cloud/src/mcp`      | Remote MCP tools plus the optional stdio transport              |
+| `apps/cloud/src/services` | Experience retrieval, ranking, feedback, and session logic      |
+| `apps/cloud/src/database` | PostgreSQL schema, migration, and seed tooling                  |
+| `apps/web`                | Live experience, reuse, and session dashboard                   |
+| `packages/contracts`      | Schemas and types shared across application boundaries          |
+| `workspace`               | Central repository, worktree, task, and agent operating runtime |
+| `docs`                    | Product and implementation specifications                       |
 
 ## Run locally
 
@@ -61,7 +132,7 @@ Or use the stdio server from this checkout:
 ```toml
 [mcp_servers.haderach]
 command = "npx"
-args = ["pnpm@10.15.0", "--dir", "/absolute/path/to/openAI-hackathon", "--filter", "@haderach/server", "mcp:stdio"]
+args = ["pnpm@10.15.0", "--dir", "/absolute/path/to/openAI-hackathon", "--filter", "@haderach/cloud", "mcp:stdio"]
 ```
 
 For a public deployment, set `AGENT_HADERACH_API_SECRET` and send it as a Bearer token. Local development intentionally starts without accounts or multi-tenancy.
@@ -90,10 +161,6 @@ The MVP intentionally supports one team and one repository context, local-first 
 ## Built with Codex
 
 Codex was used as the implementation agent and as both participants in the evaluation. It connected to Agent Haderach through MCP, generated structured experience from verified work, retrieved prior experience in a clean session, and submitted evidence-backed usefulness feedback. Agent Haderach itself remains model-agnostic and makes no AI API calls.
-
-## Why this is not “more Markdown”
-
-Repository documents remain ideal for stable rules. High-volume investigation history is different: committing every finding creates noisy searches and review overhead, cannot rank by proven reuse, and has no lifecycle for stale claims. Agent Haderach provides granular records, compact retrieval, feedback, freshness, and zero-PR contribution while linking every important claim back to evidence.
 
 ## License
 

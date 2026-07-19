@@ -7,7 +7,7 @@ const databaseUrl =
   "postgresql://postgres:postgres@127.0.0.1:55432/agent_haderach";
 const sql = postgres(databaseUrl, { max: 1 });
 const migration = fileURLToPath(
-  new URL("../migrations/0001_initial.sql", import.meta.url),
+  new URL("../../migrations/0001_initial.sql", import.meta.url),
 );
 await sql.unsafe(await readFile(migration, "utf8"));
 await sql.end();
