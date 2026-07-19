@@ -14,6 +14,21 @@ The system should avoid returning raw session transcripts or large unranked text
 blocks. Agents receive a few concise experience records and request deeper detail
 only when necessary.
 
+## MVP tenancy and repository scope — Decided
+
+The initial deployment supports one team and one repository. Every experience
+record is implicitly associated with that repository, and every connected agent
+participates in the same shared experience space.
+
+The MVP does not require user accounts, organizations, memberships, roles, or
+per-record permissions. A private deployment may run without authentication; a
+public demo should use one static API secret.
+
+The schema may retain a `repository` field to make a future migration easier,
+but the application does not need multi-repository selection or tenant-aware
+queries yet. Multi-team permissions and repository isolation can be added after
+the shared-experience loop is proven.
+
 ## Experience types
 
 - **Workflow:** successful sequence of actions, tools, waits, and validations.
@@ -49,7 +64,11 @@ scope:
   services: [checkout, payments]
   tools: [jenkins-mcp, dynatrace-mcp]
   error_signatures: []
+
+retrieval:
   keywords: [deployment, smoke-test, payment-health, observability]
+  related_terms: [release-validation, post-deployment-monitoring]
+  aliases: [CI, continuous-integration]
 
 evidence:
   - Jenkins build 1842
@@ -68,12 +87,41 @@ feedback:
   failed_uses: 0
   usefulness_score: 0.91
 
+ranking:
+  ranking_score: 0.88
+  calculated_at: 2026-07-18T14:05:00Z
+
 created_at: 2026-07-18T12:00:00Z
+last_revised_at: 2026-07-18T13:30:00Z
 last_validated_at: 2026-07-18T14:00:00Z
 ```
 
 Not every experience type requires every field. The shared fields should remain
 consistent enough to support filtering and ranking.
+
+### Required base fields — Decided
+
+Every record requires `id`, `type`, `repository`, `task_summary`,
+`content.summary`, `scope`, `retrieval`, `revision`, `confidence`, `status`,
+`feedback`, `ranking`, `created_at`, `last_revised_at`, and `last_validated_at`.
+Empty collections and default feedback values are allowed.
+
+`content.detail`, `content.steps`, `evidence`, and `outcome` are optional because
+they do not apply equally to workflows, incidents, questions, and short lessons.
+
+`retrieval.keywords` stores precise tags, `related_terms` stores nearby concepts
+or phrases, and `aliases` stores alternate names and acronyms. These values may
+be proposed by the contributing agent and normalized or enriched by the cloud
+service.
+
+`revision` identifies the relevant Git revision. `last_revised_at` records when
+the experience entry itself was last materially edited. `last_validated_at`
+records when its accuracy or outcome was last checked.
+
+`ranking.ranking_score` is the cloud service's current aggregate retrieval
+weight. It is derived from relevance-independent signals such as confidence,
+freshness, successful reuse, failed reuse, and evidence quality. The service
+recalculates it as feedback and validation events arrive.
 
 ## Summary and detailed content
 
@@ -111,6 +159,22 @@ deployment investigation may generate:
 
 Records should be independently retrievable. A future agent should not need to
 load an entire session to use one lesson.
+
+### Agent-directed extraction — Decided
+
+The contributing agent decides which parts of a session are pertinent and
+reusable enough to store, and whether they should become one record or several
+independent records. There is no required number of entries per session; a
+session may produce many, one, or none.
+
+The agent should prefer information that could save another agent meaningful
+work, prevent a repeated mistake, reproduce a successful workflow, explain an
+outcome, or enable a useful handoff. Routine actions and obvious facts should
+not become entries.
+
+The cloud service still validates the schema, searches for duplicates, applies
+safety and access rules, and may reject or merge a proposed entry. It should not
+replace the contributing agent's task-specific judgment with fixed chunk sizes.
 
 ## Indexing dimensions
 
@@ -328,11 +392,8 @@ superseded
 
 ## Open decisions
 
-1. What fields are mandatory for every experience type?
-2. How should a session be divided into independent records?
-3. Which database and search technology should implement hybrid retrieval?
-4. How should ranking weights be initialized?
-5. How should usefulness and confidence be calculated?
-6. How should code changes invalidate or downgrade experience?
-7. How much agent feedback should be automatic versus explicitly requested?
-8. What access boundaries apply across users, repositories, and organizations?
+1. Which database and search technology should implement hybrid retrieval?
+2. How should ranking weights be initialized?
+3. How should usefulness and confidence be calculated?
+4. How should code changes invalidate or downgrade experience?
+5. How much agent feedback should be automatic versus explicitly requested?
