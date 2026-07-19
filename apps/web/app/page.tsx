@@ -41,7 +41,7 @@ type Workspace = {
 };
 type AccessRequest = {
   id: string;
-  github_username?: string;
+  username?: string;
   display_name: string;
   requested_role: "reader" | "writer";
   status: string;
@@ -56,13 +56,18 @@ type PersonalToken = {
 };
 type WorkspaceMember = {
   id: string;
-  github_username?: string;
+  username?: string;
   display_name: string;
   role: "owner" | "admin" | "writer" | "reader";
 };
 
 const API =
-  process.env.NEXT_PUBLIC_AGENT_HADERACH_API_URL ?? "http://127.0.0.1:3001";
+  process.env.NEXT_PUBLIC_AGENT_HADERACH_API_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "/backend"
+    : typeof window === "undefined"
+      ? "http://127.0.0.1:3001"
+      : `${window.location.protocol}//${window.location.hostname}:3001`);
 const icons: Record<string, string> = {
   workflow: "↗",
   lesson: "◇",
@@ -104,6 +109,14 @@ export default function Dashboard() {
   const [newToken, setNewToken] = useState("");
   const [workspaceQuery, setWorkspaceQuery] = useState("");
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authForm, setAuthForm] = useState({
+    username: "",
+    email: "",
+    identifier: "",
+    password: "",
+  });
+  const [authError, setAuthError] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -173,6 +186,7 @@ export default function Dashboard() {
       setLive(true);
     } catch {
       setLive(false);
+      setSignedIn(false);
     }
   }, [workspaceId]);
 
@@ -279,14 +293,130 @@ export default function Dashboard() {
     if (response.ok) await load();
   }
 
-  if (signedIn === false) {
+  async function submitAuthentication(event: FormEvent) {
+    event.preventDefault();
+    setAuthError("");
+    const response = await fetch(`${API}/auth/${authMode}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        authMode === "signup"
+          ? {
+              username: authForm.username,
+              email: authForm.email,
+              password: authForm.password,
+            }
+          : {
+              identifier: authForm.identifier,
+              password: authForm.password,
+            },
+      ),
+    });
+    const result = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setAuthError(result.error ?? "Authentication failed");
+      return;
+    }
+    setSignedIn(true);
+    await load();
+  }
+
+  async function signOut() {
+    await fetch(`${API}/auth/signout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    setExperiences([]);
+    setWorkspaces([]);
+    setWorkspaceId("");
+    setSignedIn(false);
+    setView("memory");
+  }
+
+  if (signedIn === null) {
+    return (
+      <main className="auth-screen">
+        <BrandLogo />
+        <p>Checking authentication…</p>
+      </main>
+    );
+  }
+
+  if (!signedIn) {
     return (
       <main className="auth-screen">
         <BrandLogo />
         <p>Shared repository intelligence for coding agents.</p>
-        <a className="github-sign-in" href={`${API}/auth/github/start`}>
-          Continue with GitHub
-        </a>
+        <div className="auth-tabs">
+          <button
+            className={authMode === "signin" ? "active" : ""}
+            onClick={() => setAuthMode("signin")}
+          >
+            SIGN IN
+          </button>
+          <button
+            className={authMode === "signup" ? "active" : ""}
+            onClick={() => setAuthMode("signup")}
+          >
+            CREATE ACCOUNT
+          </button>
+        </div>
+        <form className="auth-form" onSubmit={submitAuthentication}>
+          {authMode === "signup" ? (
+            <>
+              <input
+                required
+                minLength={3}
+                maxLength={30}
+                autoComplete="username"
+                placeholder="Username"
+                value={authForm.username}
+                onChange={(event) =>
+                  setAuthForm({ ...authForm, username: event.target.value })
+                }
+              />
+              <input
+                required
+                type="email"
+                autoComplete="email"
+                placeholder="Email"
+                value={authForm.email}
+                onChange={(event) =>
+                  setAuthForm({ ...authForm, email: event.target.value })
+                }
+              />
+            </>
+          ) : (
+            <input
+              required
+              autoComplete="username"
+              placeholder="Username or email"
+              value={authForm.identifier}
+              onChange={(event) =>
+                setAuthForm({ ...authForm, identifier: event.target.value })
+              }
+            />
+          )}
+          <input
+            required
+            type="password"
+            minLength={10}
+            maxLength={200}
+            autoComplete={
+              authMode === "signup" ? "new-password" : "current-password"
+            }
+            placeholder="Password (10+ characters)"
+            value={authForm.password}
+            onChange={(event) =>
+              setAuthForm({ ...authForm, password: event.target.value })
+            }
+          />
+          {authError && <p className="auth-error">{authError}</p>}
+          <button type="submit">
+            {authMode === "signup" ? "CREATE ACCOUNT" : "SIGN IN"}
+          </button>
+        </form>
       </main>
     );
   }
@@ -578,19 +708,24 @@ export default function Dashboard() {
           <section className="view-panel access-panel">
             <div className="section-title">
               <span>ACCESS REQUESTS</span>
-              <small>
-                {
-                  accessRequests.filter(
-                    (request) => request.status === "pending",
-                  ).length
-                }{" "}
-                PENDING
-              </small>
+              <div>
+                <small>
+                  {
+                    accessRequests.filter(
+                      (request) => request.status === "pending",
+                    ).length
+                  }{" "}
+                  PENDING
+                </small>
+                <button className="sign-out" onClick={signOut}>
+                  SIGN OUT
+                </button>
+              </div>
             </div>
             {accessRequests.map((request) => (
               <article className="access-row" key={request.id}>
                 <div>
-                  <b>@{request.github_username ?? request.display_name}</b>
+                  <b>@{request.username ?? request.display_name}</b>
                   <p>
                     {request.requested_role} · {request.message || "No message"}
                   </p>
@@ -624,7 +759,7 @@ export default function Dashboard() {
             {members.map((member) => (
               <article className="access-row" key={member.id}>
                 <div>
-                  <b>@{member.github_username ?? member.display_name}</b>
+                  <b>@{member.username ?? member.display_name}</b>
                   <p>{member.display_name}</p>
                 </div>
                 <span>{member.role}</span>

@@ -11,6 +11,9 @@ import {
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
+  username: text("username"),
+  email: text("email"),
+  passwordHash: text("password_hash"),
   githubId: text("github_id").unique(),
   githubUsername: text("github_username"),
   displayName: text("display_name").notNull(),

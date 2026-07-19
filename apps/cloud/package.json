@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
+    "start:prod": "node dist/server.js",
     "mcp:stdio": "tsx src/mcp/stdio.ts",
     "db:push": "tsx src/database/migrate.ts",
     "db:seed": "tsx src/database/seed.ts",

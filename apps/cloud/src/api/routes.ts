@@ -13,13 +13,13 @@ import {
 import type { WorkspaceService } from "../services/workspace-service.js";
 import { z } from "zod";
 import { getCookie } from "hono/cookie";
-import type { GitHubAuthService } from "../auth/github-auth.js";
+import type { LocalAuthService } from "../auth/local-auth.js";
 
 export function createApi(
   repository: ExperienceRepository,
   tokens: PersonalTokenService,
   workspaces: WorkspaceService,
-  githubAuth: GitHubAuthService,
+  localAuth: LocalAuthService,
 ) {
   const api = new Hono<{ Variables: { auth: AuthContext } }>();
 
@@ -30,7 +30,7 @@ export function createApi(
         "auth",
         authorization
           ? await tokens.authenticate(authorization)
-          : await githubAuth.authenticate(getCookie(c, "haderach_session")),
+          : await localAuth.authenticate(getCookie(c, "haderach_session")),
       );
     } catch (error) {
       if (!(error instanceof AuthenticationError)) throw error;
@@ -41,7 +41,7 @@ export function createApi(
 
   api.get("/me", async (c) => {
     const [user] = await repository.client`
-      SELECT id, github_username, display_name, avatar_url
+      SELECT id, username, email, display_name, avatar_url
       FROM users WHERE id = ${c.get("auth").userId}`;
     return c.json(user);
   });

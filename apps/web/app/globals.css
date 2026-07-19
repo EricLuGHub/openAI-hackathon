@@ -589,7 +589,7 @@ label,
   gap: 24px;
   text-align: center;
 }
-.github-sign-in,
+.auth-form button,
 .workspace-create button,
 .workspace-discovery button {
   border: 1px solid var(--acid);
@@ -600,6 +600,42 @@ label,
   letter-spacing: 0.08em;
   text-decoration: none;
   cursor: pointer;
+}
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+}
+.auth-tabs button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  padding: 9px 14px;
+  font: 700 10px var(--mono);
+  cursor: pointer;
+}
+.auth-tabs button.active {
+  border-color: var(--acid);
+  color: var(--acid);
+}
+.auth-form {
+  width: min(380px, calc(100vw - 32px));
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 22px;
+}
+.auth-form input {
+  border: 1px solid var(--line);
+  background: #080a08;
+  color: var(--text);
+  padding: 12px;
+  font: 12px var(--mono);
+}
+.auth-error {
+  margin: 0;
+  color: var(--amber);
+  font: 11px var(--mono);
 }
 .access-panel {
   display: grid;
@@ -619,7 +655,8 @@ label,
   color: var(--muted);
 }
 .access-row button,
-.token-title button {
+.token-title button,
+.sign-out {
   border: 1px solid var(--acid);
   background: transparent;
   color: var(--acid);

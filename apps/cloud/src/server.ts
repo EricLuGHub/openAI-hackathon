@@ -11,28 +11,60 @@ import {
   type AuthContext,
 } from "./auth/personal-tokens.js";
 import { WorkspaceService } from "./services/workspace-service.js";
-import { GitHubAuthService } from "./auth/github-auth.js";
-import { createGitHubAuthRoutes } from "./auth/github-routes.js";
+import { LocalAuthService } from "./auth/local-auth.js";
+import { createLocalAuthRoutes } from "./auth/local-auth-routes.js";
 
-const repository = new ExperienceRepository(
+const databaseUrl =
   process.env.DATABASE_URL ??
-    "postgresql://postgres:postgres@127.0.0.1:55432/agent_haderach",
-);
+  (process.env.NODE_ENV === "production"
+    ? undefined
+    : "postgresql://postgres:postgres@127.0.0.1:55432/agent_haderach");
+if (!databaseUrl) throw new Error("DATABASE_URL is required in production");
+const repository = new ExperienceRepository(databaseUrl);
 const app = new Hono();
 const tokens = new PersonalTokenService(repository.client);
 const workspaces = new WorkspaceService(repository.client);
-const githubAuth = new GitHubAuthService(repository.client);
+const localAuth = new LocalAuthService(repository.client);
+const authAttempts = new Map<string, { count: number; resetsAt: number }>();
 app.use(
   "*",
   cors({
-    origin: process.env.WEB_APP_URL ?? "http://127.0.0.1:3000",
+    origin: process.env.WEB_APP_URL
+      ? [process.env.WEB_APP_URL]
+      : ["http://127.0.0.1:3000", "http://localhost:3000"],
     credentials: true,
   }),
 );
 
-app.get("/health", (c) => c.json({ status: "ok", service: "agent-haderach" }));
-app.route("/auth", createGitHubAuthRoutes(githubAuth));
-app.route("/api", createApi(repository, tokens, workspaces, githubAuth));
+app.use("/auth/*", async (c, next) => {
+  if (c.req.method !== "POST") return next();
+  const now = Date.now();
+  const key =
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+    c.req.header("x-real-ip") ??
+    "unknown";
+  const current = authAttempts.get(key);
+  const attempt =
+    !current || current.resetsAt <= now
+      ? { count: 1, resetsAt: now + 15 * 60_000 }
+      : { ...current, count: current.count + 1 };
+  authAttempts.set(key, attempt);
+  if (attempt.count > 30) {
+    c.header(
+      "Retry-After",
+      String(Math.max(1, Math.ceil((attempt.resetsAt - now) / 1000))),
+    );
+    return c.json({ error: "Too many authentication attempts" }, 429);
+  }
+  await next();
+});
+
+app.get("/health", async (c) => {
+  await repository.client`SELECT 1`;
+  return c.json({ status: "ok", service: "agent-haderach" });
+});
+app.route("/auth", createLocalAuthRoutes(localAuth));
+app.route("/api", createApi(repository, tokens, workspaces, localAuth));
 
 app.all("/mcp", async (c) => {
   let auth: AuthContext;
@@ -53,10 +85,13 @@ app.all("/mcp", async (c) => {
 
 app.onError((error, c) => {
   console.error(error);
-  return c.json(
-    { error: error instanceof Error ? error.message : "Internal error" },
-    500,
-  );
+  const message =
+    process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : error instanceof Error
+        ? error.message
+        : "Internal error";
+  return c.json({ error: message }, 500);
 });
 
 const port = Number(process.env.PORT ?? 3001);

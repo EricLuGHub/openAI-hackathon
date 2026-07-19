@@ -147,7 +147,7 @@ export class WorkspaceService {
 
   async listRequests(auth: AuthContext, workspaceId: string) {
     return this.sql`
-      SELECT request.*, users.github_username, users.display_name, users.avatar_url
+      SELECT request.*, users.username, users.display_name, users.avatar_url
       FROM workspace_access_requests request
       JOIN users ON users.id = request.requester_user_id
       WHERE request.workspace_id = ${workspaceId}
@@ -216,7 +216,7 @@ export class WorkspaceService {
 
   async listMembers(auth: AuthContext, workspaceId: string) {
     return this.sql`
-      SELECT users.id, users.github_username, users.display_name, users.avatar_url,
+      SELECT users.id, users.username, users.display_name, users.avatar_url,
         membership.role, membership.created_at
       FROM workspace_memberships membership
       JOIN users ON users.id = membership.user_id

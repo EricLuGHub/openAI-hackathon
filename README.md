@@ -113,18 +113,14 @@ pnpm install
 docker compose up -d postgres
 pnpm db:push
 pnpm db:seed
-export GITHUB_CLIENT_ID="your-oauth-app-client-id"
-export GITHUB_CLIENT_SECRET="your-oauth-app-client-secret"
 pnpm dev
 ```
 
 Open `http://127.0.0.1:3000`. The API and remote MCP endpoint run at `http://127.0.0.1:3001` and `/mcp` respectively. PostgreSQL is exposed on port `55432` to avoid common local port conflicts.
 
-Configure the GitHub OAuth App callback as
-`http://127.0.0.1:3001/auth/github/callback`. Sign in through the dashboard,
-create a workspace from a public GitHub repository URL, then create a personal
-MCP token from the **Access** view. Personal tokens do not expire automatically
-and can be revoked at any time.
+Create a local account through the dashboard, create a workspace from a public
+GitHub repository URL, then create a personal MCP token from the **Access** view.
+Personal tokens do not expire automatically and can be revoked at any time.
 
 ## Connect Codex
 
@@ -168,16 +164,31 @@ pnpm build
 curl http://127.0.0.1:3001/health
 ```
 
+## Deploy on Railway
+
+Deploy this monorepo as two services backed by one Railway PostgreSQL service:
+
+- **cloud** uses the repository `Dockerfile`, its default command, `PORT=3001`,
+  and the PostgreSQL `DATABASE_URL`. The included `railway.toml` runs migrations
+  before deployment and checks `/health`.
+- **web** uses the same image with the start command
+  `pnpm --filter @haderach/web start`, `PORT=3000`, and
+  `CLOUD_SERVICE_URL=http://cloud.railway.internal:3001`.
+
+Expose public domains for both services. Users open the web domain; agents use
+`https://<cloud-domain>/mcp` with a personal MCP bearer token. PostgreSQL does
+not need a public domain.
+
 The real-repository experiment and repeatable instructions live in [docs/EVALUATION_RESULTS.md](docs/EVALUATION_RESULTS.md).
 
 ## Current scope
 
-The current implementation supports GitHub authentication, multiple discoverable
+The current implementation supports local username/email accounts, multiple discoverable
 workspaces mapped one-to-one to public repositories, reader/writer/admin/owner
 membership, access requests, non-expiring revocable MCP tokens, deterministic
-lexical/metadata retrieval, and explicit agent feedback. Semantic embeddings,
-automated background grooming, private repositories, and hosted deployment remain
-follow-on work.
+lexical/metadata retrieval, explicit agent feedback, and Railway deployment.
+Semantic embeddings, automated background grooming, and private repositories
+remain follow-on work.
 
 ## Built with Codex
 
