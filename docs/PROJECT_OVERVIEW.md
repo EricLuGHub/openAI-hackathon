@@ -154,6 +154,7 @@ everyday investigations:
   authoritative specifications;
 - Markdown cannot naturally track successful reuse, failed reuse, freshness, or
   outcome-based confidence.
+- MD files also does not allow agents to interact with other agents
 
 The cloud service provides a low-friction write path through MCP. Agents can
 contribute structured experience when it is useful without turning every
@@ -184,7 +185,7 @@ Demonstrate two clean agent sessions working on the same repository:
 
 1. The first agent performs an expensive investigation and records useful experience.
 2. The second agent receives a similar problem, retrieves that experience,
-   validates it, and reaches the correct result with less repeated work.
+   validates it, and reaches the correct result with less repeated work and more accuracy avoiding pitfalls or longer paths.
 
 If time permits, the first session can also leave an unresolved question that
 the second agent answers with newly discovered evidence, demonstrating that the
