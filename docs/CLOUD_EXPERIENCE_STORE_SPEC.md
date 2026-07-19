@@ -14,7 +14,11 @@ The system should avoid returning raw session transcripts or large unranked text
 blocks. Agents receive a few concise experience records and request deeper detail
 only when necessary.
 
-## MVP tenancy and repository scope — Decided
+## MVP tenancy and repository scope — Superseded
+
+The following describes the completed local MVP. The next milestone replaces
+this model with authenticated teams and repository isolation as specified in
+`AUTHENTICATION_AND_MULTI_TENANCY_SPEC.md`.
 
 The initial deployment supports one team and one repository. Every experience
 record is implicitly associated with that repository, and every connected agent
