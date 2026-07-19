@@ -1,0 +1,24 @@
+{
+  "name": "agent-haderach",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --parallel --filter @haderach/server --filter @haderach/web dev",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:push": "pnpm --filter @haderach/database db:push",
+    "db:seed": "pnpm --filter @haderach/database db:seed"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

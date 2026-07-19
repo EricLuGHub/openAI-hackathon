@@ -97,12 +97,53 @@ agents from independently debugging their credentials when the platform itself
 is unavailable. Recent reports can be grouped into a temporary incident and
 expired when agents observe recovery.
 
-### Asking other agents — Future direction
+## Agent-to-agent collaboration
 
-An agent may leave a question, blocker, or request for evidence. Another agent
-working with relevant context could answer it or attach a useful finding. This
-would allow agents to collaborate asynchronously across contributors, but it is
-not required for the initial product.
+Agent Haderach is not only a passive memory store. It can provide an
+asynchronous communication layer between agents working for different
+contributors.
+
+When an agent reaches a blocker or lacks context, it can publish a question,
+ticket, or request for evidence. The system associates that request with the
+repository, task, files, services, and tools involved. If another agent is
+working in a relevant area—or later discovers information that answers the
+question—the system can surface the request to that agent.
+
+Examples include:
+
+- “Is Jenkins currently unavailable, or is this a local authentication issue?”
+- “Why must checkout retries remain ordered per customer?”
+- “Has anyone successfully validated this migration against production-like data?”
+- “Which Dynatrace query confirms that this deployment is healthy?”
+
+An answering agent can attach evidence, a workflow, a lesson, or a partial
+finding. The original agent—or a future session—can retrieve the response and
+continue the investigation.
+
+```text
+Agent A encounters a blocker
+        ↓
+Publishes a scoped question
+        ↓
+Agent Haderach matches it to relevant agent activity and experience
+        ↓
+Agent B supplies an answer, evidence, or useful partial context
+        ↓
+Agent A or a future agent continues the task
+```
+
+This enables agents to:
+
+- ask for help without requiring both sessions to be active simultaneously;
+- share knowledge across contributors and repositories;
+- avoid duplicating investigations already in progress;
+- turn unresolved questions into reusable answers;
+- coordinate around incidents and overlapping work.
+
+Answers remain subject to the same trust model as other experience: they carry
+their source, evidence, repository revision, outcome, and later usefulness
+feedback. The initial hackathon may demonstrate a simple question-and-answer
+handoff, while automatic routing to relevant active agents can evolve later.
 
 ## Why not store everything in Markdown?
 
@@ -117,6 +158,7 @@ everyday investigations:
   authoritative specifications;
 - Markdown cannot naturally track successful reuse, failed reuse, freshness, or
   outcome-based confidence.
+- MD files also does not allow agents to interact with other agents
 
 The cloud service provides a low-friction write path through MCP. Agents can
 contribute structured experience when it is useful without turning every
@@ -138,6 +180,7 @@ learned, validated, or found broken.
 - A cloud service stores and retrieves repository-scoped agent experience.
 - An MCP server connects Codex and other compatible agents to that service.
 - A context manager selects the most relevant prior experience for the current task.
+- A collaboration layer lets agents publish scoped questions and contribute answers.
 - A UI makes shared workflows, findings, evidence, outcomes, and reuse visible.
 
 ## Hackathon goal
@@ -146,7 +189,11 @@ Demonstrate two clean agent sessions working on the same repository:
 
 1. The first agent performs an expensive investigation and records useful experience.
 2. The second agent receives a similar problem, retrieves that experience,
-   validates it, and reaches the correct result with less repeated work.
+   validates it, and reaches the correct result with less repeated work and more accuracy avoiding pitfalls or longer paths.
+
+If time permits, the first session can also leave an unresolved question that
+the second agent answers with newly discovered evidence, demonstrating that the
+system supports active collaboration as well as memory reuse.
 
 Success should be measured through time, tokens, exploratory tool calls,
 correctness, and whether the second agent avoids a previously discovered pitfall.

@@ -1,0 +1,14 @@
+workspace: agent-haderach
+repository: acme/checkout
+experience_service:
+  transport: http
+  url: http://127.0.0.1:3001/mcp
+defaults:
+  token_budget: 800
+  result_limit: 5
+  grooming_interval_minutes: 60
+directories:
+  repositories: repos
+  worktrees: worktrees
+  tasks: tasks
+  sessions: sessions
