@@ -118,4 +118,3 @@ repository should therefore remain independently testable without them.
 
 Authentication and production multi-tenancy are documented follow-on work and
 should not be expected from the hackathon MVP.
-

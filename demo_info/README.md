@@ -40,4 +40,3 @@ the full methodology and caveats.
 - [MCP server specification](../docs/MCP_SERVER_SPEC.md)
 - [Experience-store specification](../docs/CLOUD_EXPERIENCE_STORE_SPEC.md)
 - [Web UI specification](../docs/WEB_UI_SPEC.md)
-

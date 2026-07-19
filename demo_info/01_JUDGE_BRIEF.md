@@ -59,13 +59,13 @@ successful knowledge rises; stale knowledge falls
 
 Haderach does not attempt to replace repository search.
 
-| Existing mechanism | What it does well | What Haderach adds |
-|---|---|---|
-| `rg` and file reads | Current source, exact strings, symbols | Findings from previous agent investigations |
-| Git history | Code changes and commit history | Structured outcomes, pitfalls, and usefulness feedback |
-| `AGENTS.md` | Stable repository instructions | Granular, evolving experience without documentation churn |
-| Generic RAG | Similarity-based document retrieval | Repository scope, revision, evidence, freshness, outcomes, and reinforcement |
-| Chat history | Continuity inside one conversation | Reuse across clean sessions and different developers |
+| Existing mechanism  | What it does well                      | What Haderach adds                                                           |
+| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------- |
+| `rg` and file reads | Current source, exact strings, symbols | Findings from previous agent investigations                                  |
+| Git history         | Code changes and commit history        | Structured outcomes, pitfalls, and usefulness feedback                       |
+| `AGENTS.md`         | Stable repository instructions         | Granular, evolving experience without documentation churn                    |
+| Generic RAG         | Similarity-based document retrieval    | Repository scope, revision, evidence, freshness, outcomes, and reinforcement |
+| Chat history        | Continuity inside one conversation     | Reuse across clean sessions and different developers                         |
 
 The key distinction is not storing more context. It is transferring compact,
 evidenced experience between independent agents and learning whether reuse was
@@ -96,15 +96,15 @@ Browser ─────── REST API ──────┘        │
                                             + token budgets
 ```
 
-| Layer | Implementation |
-|---|---|
-| Monorepo | TypeScript, pnpm workspaces |
-| Agent protocol | Official TypeScript MCP SDK |
-| Cloud/API | Hono on Node.js |
-| Database | PostgreSQL with Drizzle and SQL migrations |
-| Contracts | Shared schemas and types |
-| UI | Next.js |
-| Retrieval | Lexical/metadata filtering, deterministic ranking, progressive detail |
+| Layer          | Implementation                                                        |
+| -------------- | --------------------------------------------------------------------- |
+| Monorepo       | TypeScript, pnpm workspaces                                           |
+| Agent protocol | Official TypeScript MCP SDK                                           |
+| Cloud/API      | Hono on Node.js                                                       |
+| Database       | PostgreSQL with Drizzle and SQL migrations                            |
+| Contracts      | Shared schemas and types                                              |
+| UI             | Next.js                                                               |
+| Retrieval      | Lexical/metadata filtering, deterministic ranking, progressive detail |
 
 The Haderach backend contains no LLM and calls no AI API. Codex performs the
 judgment required to create, verify, and apply experience. The service remains
@@ -167,4 +167,3 @@ Haderach has proven technical feasibility and one successful experience transfer
 It has not yet proven general performance across repositories, models, developers,
 or task types. The next evaluation should add repeated runs, a Markdown control,
 retained raw telemetry, hidden behavioral assertions, and larger tasks.
-

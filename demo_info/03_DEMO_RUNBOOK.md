@@ -92,12 +92,12 @@ Narration:
 
 Animate the comparison table:
 
-| Metric | Discovery | Haderach reuse |
-|---|---:|---:|
-| Correct result | Pass | Pass |
-| AVA tests | 25 | 26 |
-| Total input tokens | 511,233 | 408,710 |
-| Non-cached input tokens | 55,809 | 30,342 |
+| Metric                  | Discovery | Haderach reuse |
+| ----------------------- | --------: | -------------: |
+| Correct result          |      Pass |           Pass |
+| AVA tests               |        25 |             26 |
+| Total input tokens      |   511,233 |        408,710 |
+| Non-cached input tokens |    55,809 |         30,342 |
 
 Highlight:
 
@@ -175,4 +175,3 @@ Use restrained animation tied to actual events:
 - “The second agent had no additional information.”
 - “Wall time was 27.6% faster because of Haderach.”
 - “The current MVP is production-ready or fully multi-tenant.”
-

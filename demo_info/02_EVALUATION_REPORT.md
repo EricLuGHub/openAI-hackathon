@@ -12,15 +12,15 @@ statistically significant benchmark or a general performance guarantee.
 
 ## Fixed scenario
 
-| Field | Value |
-|---|---|
-| Repository | `sindresorhus/p-limit` |
-| Starting revision | `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551` |
-| Task | Add `limit.onIdle(): Promise<void>` |
-| Required behavior | Immediate idle resolution, multiple waiters, active + pending drain, safe `clearQueue()` behavior |
-| Required surfaces | Runtime, TypeScript declaration, type test, README, runtime tests |
-| Agent | Codex CLI 0.144.1, same documented default model and execution permissions |
-| Experience backend | Local Agent Haderach MCP over Streamable HTTP |
+| Field              | Value                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| Repository         | `sindresorhus/p-limit`                                                                            |
+| Starting revision  | `42599ebbbb1228a5bdab381fcf8f4ac20eb8d551`                                                        |
+| Task               | Add `limit.onIdle(): Promise<void>`                                                               |
+| Required behavior  | Immediate idle resolution, multiple waiters, active + pending drain, safe `clearQueue()` behavior |
+| Required surfaces  | Runtime, TypeScript declaration, type test, README, runtime tests                                 |
+| Agent              | Codex CLI 0.144.1, same documented default model and execution permissions                        |
+| Experience backend | Local Agent Haderach MCP over Streamable HTTP                                                     |
 
 The task was created specifically for this evaluation. Both worktrees began at
 the same upstream commit. The second agent received neither the first agent's
@@ -57,15 +57,15 @@ reuse with retrieval**. It was not blinded.
 
 ## Measured comparison
 
-| Metric | Without retrieval | With Haderach | Recorded difference |
-|---|---:|---:|---:|
-| Outcome | Pass | Pass | No correctness regression |
-| AVA tests after change | 25 | 26 | Haderach added one test |
-| Total input tokens | 511,233 | 408,710 | **20.1% lower** |
-| Cached input tokens | 455,424 | 378,368 | Not claimed |
-| Non-cached input tokens | 55,809 | 30,342 | **45.6% lower** |
-| Output tokens | 4,981 | 4,966 | 0.3% lower |
-| Wall time | 198.4 s | 143.5 s | 27.6% lower, confounded |
+| Metric                  | Without retrieval | With Haderach |       Recorded difference |
+| ----------------------- | ----------------: | ------------: | ------------------------: |
+| Outcome                 |              Pass |          Pass | No correctness regression |
+| AVA tests after change  |                25 |            26 |   Haderach added one test |
+| Total input tokens      |           511,233 |       408,710 |           **20.1% lower** |
+| Cached input tokens     |           455,424 |       378,368 |               Not claimed |
+| Non-cached input tokens |            55,809 |        30,342 |           **45.6% lower** |
+| Output tokens           |             4,981 |         4,966 |                0.3% lower |
+| Wall time               |           198.4 s |       143.5 s |   27.6% lower, confounded |
 
 The runtime `index.js` diff was identical in both implementations. The Haderach
 agent additionally tested the `rejectOnClear: true` form of the known
@@ -125,12 +125,12 @@ repository isolation in a multi-repository implementation.
 
 ## Stronger next benchmark
 
-| Condition | Purpose |
-|---|---|
-| Baseline | Fresh Codex with normal repository tools and no Haderach |
-| Haderach | Identical fresh Codex with Haderach retrieval |
-| Markdown control | Same facts supplied through conventional Markdown |
-| Full-context control | All source material supplied without ranked selection |
+| Condition            | Purpose                                                  |
+| -------------------- | -------------------------------------------------------- |
+| Baseline             | Fresh Codex with normal repository tools and no Haderach |
+| Haderach             | Identical fresh Codex with Haderach retrieval            |
+| Markdown control     | Same facts supplied through conventional Markdown        |
+| Full-context control | All source material supplied without ranked selection    |
 
 The Markdown control is essential. It determines whether the benefit comes from
 Haderach's shared indexing and progressive retrieval or simply from providing
@@ -163,4 +163,3 @@ Recommended improvements:
 
 Do not shorten this to a general claim that Haderach always reduces tokens by
 45.6%.
-
