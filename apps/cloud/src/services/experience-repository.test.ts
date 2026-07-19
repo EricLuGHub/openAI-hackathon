@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateRanking } from "./index.js";
+import { calculateRanking } from "./experience-repository.js";
 
 describe("calculateRanking", () => {
   it("rewards verified successful current experience", () => {

@@ -47,14 +47,18 @@ Create a runnable workspace containing:
 
 ```text
 apps/
-├── web/
-└── server/
+├── cloud/
+│   └── src/
+│       ├── api/
+│       ├── mcp/
+│       ├── database/
+│       └── services/
+└── web/
 
 packages/
-├── database/
-├── schemas/
-├── retrieval/
-└── experience/
+└── contracts/
+
+workspace/
 ```
 
 Required foundations:

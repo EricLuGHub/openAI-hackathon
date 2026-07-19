@@ -31,6 +31,7 @@ type Session = {
   startedAt: string;
   outcome?: string;
 };
+type View = "memory" | "sessions" | "signals";
 
 const API =
   process.env.NEXT_PUBLIC_AGENT_HADERACH_API_URL ?? "http://127.0.0.1:3001";
@@ -66,6 +67,7 @@ export default function Dashboard() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [live, setLive] = useState(false);
+  const [view, setView] = useState<View>("memory");
 
   const load = useCallback(async () => {
     try {
@@ -74,8 +76,30 @@ export default function Dashboard() {
         fetch(`${API}/api/sessions`),
       ]);
       if (!e.ok || !s.ok) throw new Error("offline");
-      setExperiences(await e.json());
-      setSessions(await s.json());
+      const experienceRows = await e.json();
+      const sessionRows = await s.json();
+      setExperiences(
+        experienceRows.map((row: Record<string, unknown>) => ({
+          ...row,
+          taskSummary: row.taskSummary ?? row.task_summary,
+          rankingScore: row.rankingScore ?? row.ranking_score,
+          usefulnessScore: row.usefulnessScore ?? row.usefulness_score,
+          successfulUses: row.successfulUses ?? row.successful_uses,
+          failedUses: row.failedUses ?? row.failed_uses,
+          outcomeStatus: row.outcomeStatus ?? row.outcome_status,
+          keywords: row.keywords ?? [],
+          paths: row.paths ?? [],
+          services: row.services ?? [],
+          createdAt: row.createdAt ?? row.created_at,
+          lastValidatedAt: row.lastValidatedAt ?? row.last_validated_at,
+        })),
+      );
+      setSessions(
+        sessionRows.map((row: Record<string, unknown>) => ({
+          ...row,
+          startedAt: row.startedAt ?? row.created_at,
+        })),
+      );
       setLive(true);
     } catch {
       setLive(false);
@@ -120,13 +144,25 @@ export default function Dashboard() {
           <BrandLogo compact />
         </div>
         <nav>
-          <button className="active">
+          <button
+            className={view === "memory" ? "active" : ""}
+            onClick={() => setView("memory")}
+            aria-label="Experience memory"
+          >
             ⌁<small>Memory</small>
           </button>
-          <button>
+          <button
+            className={view === "sessions" ? "active" : ""}
+            onClick={() => setView("sessions")}
+            aria-label="Agent sessions"
+          >
             ◫<small>Sessions</small>
           </button>
-          <button>
+          <button
+            className={view === "signals" ? "active" : ""}
+            onClick={() => setView("signals")}
+            aria-label="Questions and incidents"
+          >
             ◎<small>Signals</small>
           </button>
         </nav>
@@ -140,7 +176,7 @@ export default function Dashboard() {
             <p className="eyebrow">COLLECTIVE REPOSITORY INTELLIGENCE</p>
             <BrandLogo />
           </div>
-          <div className="repo">
+          <div className="repo" title="MVP repository scope">
             <span>acme / checkout</span>
             <b>⌄</b>
           </div>
@@ -170,128 +206,198 @@ export default function Dashboard() {
             </small>
           </article>
         </div>
-        <div className="toolbar">
-          <div className="search">
-            <span>⌕</span>
-            <input
-              aria-label="Search experiences"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search errors, paths, workflows, findings…"
-            />
-          </div>
-          <div className="filters">
-            <button
-              className={type === "all" ? "on" : ""}
-              onClick={() => setType("all")}
-            >
-              ALL
-            </button>
-            {types.map((t) => (
-              <button
-                key={t}
-                className={type === t ? "on" : ""}
-                onClick={() => setType(t)}
-              >
-                {t.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="grid">
-          <section className="feed">
-            <div className="section-title">
-              <span>RANKED EXPERIENCE</span>
-              <small>{filtered.length} RESULTS · BEST SIGNAL FIRST</small>
+        {view === "memory" && (
+          <div className="toolbar">
+            <div className="search">
+              <span>⌕</span>
+              <input
+                aria-label="Search experiences"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search errors, paths, workflows, findings…"
+              />
             </div>
-            {filtered.map((x, i) => (
+            <div className="filters">
               <button
-                className="card"
-                onClick={() => open(x)}
-                key={x.id}
-                style={{ animationDelay: `${i * 70}ms` }}
+                className={type === "all" ? "on" : ""}
+                onClick={() => setType("all")}
               >
-                <div className={`kind ${x.type}`}>{icons[x.type] ?? "·"}</div>
-                <div className="card-body">
+                ALL
+              </button>
+              {types.map((t) => (
+                <button
+                  key={t}
+                  className={type === t ? "on" : ""}
+                  onClick={() => setType(t)}
+                >
+                  {t.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {view === "memory" && (
+          <div className="grid">
+            <section className="feed">
+              <div className="section-title">
+                <span>RANKED EXPERIENCE</span>
+                <small>{filtered.length} RESULTS · BEST SIGNAL FIRST</small>
+              </div>
+              {filtered.map((x, i) => (
+                <button
+                  className="card"
+                  onClick={() => open(x)}
+                  key={x.id}
+                  style={{ animationDelay: `${i * 70}ms` }}
+                >
+                  <div className={`kind ${x.type}`}>{icons[x.type] ?? "·"}</div>
+                  <div className="card-body">
+                    <div>
+                      <span className="tag">{x.type}</span>
+                      <span className={`state ${x.confidence}`}>
+                        {x.confidence}
+                      </span>
+                    </div>
+                    <h3>{x.taskSummary}</h3>
+                    <p>{x.summary}</p>
+                    <div className="chips">
+                      {x.keywords.slice(0, 4).map((k) => (
+                        <span key={k}>{k}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="score">
+                    <svg viewBox="0 0 42 42">
+                      <circle cx="21" cy="21" r="17" />
+                      <circle
+                        className="fill"
+                        cx="21"
+                        cy="21"
+                        r="17"
+                        style={{
+                          strokeDashoffset: 107 - 107 * Number(x.rankingScore),
+                        }}
+                      />
+                    </svg>
+                    <b>{Math.round(Number(x.rankingScore) * 100)}</b>
+                    <small>RANK</small>
+                  </div>
+                </button>
+              ))}
+              {!filtered.length && (
+                <div className="empty">
+                  No shared experience matches this signal.
+                </div>
+              )}
+            </section>
+            <section className="activity">
+              <div className="section-title">
+                <span>AGENT ACTIVITY</span>
+                <i className={live ? "online" : ""} />
+              </div>
+              {sessions.slice(0, 6).map((s) => (
+                <article key={s.id}>
+                  <div className="agent">A</div>
                   <div>
-                    <span className="tag">{x.type}</span>
-                    <span className={`state ${x.confidence}`}>
-                      {x.confidence}
-                    </span>
+                    <b>{s.task}</b>
+                    <p>
+                      {s.status} · {s.revision.slice(0, 8)}
+                    </p>
                   </div>
-                  <h3>{x.taskSummary}</h3>
-                  <p>{x.summary}</p>
-                  <div className="chips">
-                    {x.keywords.slice(0, 4).map((k) => (
-                      <span key={k}>{k}</span>
-                    ))}
-                  </div>
+                  <time>
+                    {new Date(s.startedAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </time>
+                </article>
+              ))}
+              {!sessions.length && (
+                <div className="empty small">
+                  Sessions appear when agents connect.
                 </div>
-                <div className="score">
-                  <svg viewBox="0 0 42 42">
-                    <circle cx="21" cy="21" r="17" />
-                    <circle
-                      className="fill"
-                      cx="21"
-                      cy="21"
-                      r="17"
-                      style={{
-                        strokeDashoffset: 107 - 107 * Number(x.rankingScore),
-                      }}
-                    />
-                  </svg>
-                  <b>{Math.round(Number(x.rankingScore) * 100)}</b>
-                  <small>RANK</small>
-                </div>
-              </button>
-            ))}
-            {!filtered.length && (
-              <div className="empty">
-                No shared experience matches this signal.
-              </div>
-            )}
-          </section>
-          <section className="activity">
-            <div className="section-title">
-              <span>AGENT ACTIVITY</span>
-              <i className={live ? "online" : ""} />
-            </div>
-            {sessions.slice(0, 6).map((s) => (
-              <article key={s.id}>
-                <div className="agent">A</div>
+              )}
+              <div className="flow">
+                <p>EXPERIENCE FLYWHEEL</p>
                 <div>
-                  <b>{s.task}</b>
-                  <p>
-                    {s.status} · {s.revision.slice(0, 8)}
-                  </p>
+                  <span>DISCOVER</span>
+                  <b>→</b>
+                  <span>APPLY</span>
+                  <b>→</b>
+                  <span>VERIFY</span>
+                  <b>→</b>
+                  <span>REINFORCE</span>
                 </div>
-                <time>
-                  {new Date(s.startedAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </time>
-              </article>
-            ))}
-            {!sessions.length && (
-              <div className="empty small">
-                Sessions appear when agents connect.
               </div>
-            )}
-            <div className="flow">
-              <p>EXPERIENCE FLYWHEEL</p>
-              <div>
-                <span>DISCOVER</span>
-                <b>→</b>
-                <span>APPLY</span>
-                <b>→</b>
-                <span>VERIFY</span>
-                <b>→</b>
-                <span>REINFORCE</span>
-              </div>
+            </section>
+          </div>
+        )}
+        {view === "sessions" && (
+          <section className="view-panel">
+            <div className="section-title">
+              <span>ALL AGENT SESSIONS</span>
+              <small>{sessions.length} RECORDED</small>
+            </div>
+            <div className="session-table">
+              {sessions.map((s) => (
+                <article key={s.id}>
+                  <div className="agent">A</div>
+                  <div>
+                    <span className={`status-dot ${s.status}`} />{" "}
+                    <b>{s.task}</b>
+                    <p>
+                      {s.outcome ||
+                        "Work in progress—no final outcome recorded."}
+                    </p>
+                  </div>
+                  <div className="session-meta">
+                    <span>{s.status}</span>
+                    <code>{s.revision.slice(0, 8)}</code>
+                    <time>{new Date(s.startedAt).toLocaleString()}</time>
+                  </div>
+                </article>
+              ))}
+              {!sessions.length && (
+                <div className="empty">No sessions have connected yet.</div>
+              )}
             </div>
           </section>
-        </div>
+        )}
+        {view === "signals" && (
+          <section className="view-panel">
+            <div className="section-title">
+              <span>COLLABORATION SIGNALS</span>
+              <small>QUESTIONS · ANSWERS · INCIDENTS</small>
+            </div>
+            <div className="signal-grid">
+              {experiences
+                .filter((x) =>
+                  ["question", "answer", "incident"].includes(x.type),
+                )
+                .map((x, i) => (
+                  <button
+                    className="signal-card"
+                    key={x.id}
+                    onClick={() => open(x)}
+                    style={{ animationDelay: `${i * 70}ms` }}
+                  >
+                    <div className={`kind ${x.type}`}>{icons[x.type]}</div>
+                    <span className="tag">{x.type}</span>
+                    <h3>{x.taskSummary}</h3>
+                    <p>{x.summary}</p>
+                  </button>
+                ))}
+              {!experiences.some((x) =>
+                ["question", "answer", "incident"].includes(x.type),
+              ) && (
+                <div className="empty">
+                  No open questions or incidents. The repository network is
+                  quiet.
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </section>
       {selected && (
         <div className="overlay" onClick={() => setSelected(null)}>

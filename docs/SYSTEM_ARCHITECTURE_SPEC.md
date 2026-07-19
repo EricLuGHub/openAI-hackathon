@@ -52,7 +52,7 @@ Compares agent performance with and without Agent Haderach.
 
 - **Language:** TypeScript
 - **Monorepo:** pnpm workspaces
-- **Frontend:** Next.js, Tailwind CSS, shadcn/ui, Framer Motion
+- **Frontend:** Next.js with a custom responsive design system
 - **Server:** Hono on Node.js
 - **MCP:** official TypeScript MCP SDK v1.x
 - **Database:** managed PostgreSQL
@@ -70,21 +70,25 @@ produce summaries and keywords, judge pertinence, and propose deduplication.
 
 ```text
 apps/
-├── web/
-└── server/
-    ├── api/
-    └── mcp/
+├── cloud/
+│   └── src/
+│       ├── api/
+│       ├── mcp/
+│       ├── database/
+│       └── services/
+└── web/
 
 packages/
-├── database/
-├── schemas/
-├── retrieval/
-└── experience/
+└── contracts/
+
+workspace/
 
 docs/
 ```
 
-The HTTP API and MCP server run in the same server application initially.
+The HTTP API and remote MCP endpoint run in the same cloud deployment while
+remaining separate code boundaries. The cloud owns database access; shared
+contracts contain only schemas and types used across application boundaries.
 
 ## Request flow
 

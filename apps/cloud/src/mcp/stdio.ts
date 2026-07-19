@@ -1,6 +1,6 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ExperienceRepository } from "@haderach/database";
-import { createMcpServer } from "./mcp.js";
+import { ExperienceRepository } from "../services/experience-repository.js";
+import { createMcpServer } from "./tools.js";
 
 const repository = new ExperienceRepository(
   process.env.DATABASE_URL ??

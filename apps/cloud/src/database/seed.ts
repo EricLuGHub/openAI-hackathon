@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ExperienceRepository } from "./index.js";
+import { ExperienceRepository } from "../services/experience-repository.js";
 
 const repository = new ExperienceRepository(
   process.env.DATABASE_URL ??
