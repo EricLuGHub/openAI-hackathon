@@ -113,10 +113,18 @@ pnpm install
 docker compose up -d postgres
 pnpm db:push
 pnpm db:seed
+export GITHUB_CLIENT_ID="your-oauth-app-client-id"
+export GITHUB_CLIENT_SECRET="your-oauth-app-client-secret"
 pnpm dev
 ```
 
 Open `http://127.0.0.1:3000`. The API and remote MCP endpoint run at `http://127.0.0.1:3001` and `/mcp` respectively. PostgreSQL is exposed on port `55432` to avoid common local port conflicts.
+
+Configure the GitHub OAuth App callback as
+`http://127.0.0.1:3001/auth/github/callback`. Sign in through the dashboard,
+create a workspace from a public GitHub repository URL, then create a personal
+MCP token from the **Access** view. Personal tokens do not expire automatically
+and can be revoked at any time.
 
 ## Connect Codex
 
@@ -125,6 +133,7 @@ Add the local remote MCP endpoint:
 ```toml
 [mcp_servers.haderach]
 url = "http://127.0.0.1:3001/mcp"
+bearer_token_env_var = "AGENT_HADERACH_TOKEN"
 ```
 
 Or use the stdio server from this checkout:
@@ -133,9 +142,13 @@ Or use the stdio server from this checkout:
 [mcp_servers.haderach]
 command = "npx"
 args = ["pnpm@10.15.0", "--dir", "/absolute/path/to/openAI-hackathon", "--filter", "@haderach/cloud", "mcp:stdio"]
+[mcp_servers.haderach.env]
+AGENT_HADERACH_TOKEN = "ahd_pat_..."
 ```
 
-For a public deployment, set `AGENT_HADERACH_API_SECRET` and send it as a Bearer token. Local development intentionally starts without accounts or multi-tenancy.
+Both transports require a personal MCP token. The raw token is displayed only
+once; the database stores its SHA-256 digest. Every MCP session is bound to an
+authorized workspace, and every experience query is workspace-scoped.
 
 ## MCP workflow
 
@@ -156,7 +169,12 @@ The real-repository experiment and repeatable instructions live in [docs/EVALUAT
 
 ## Current scope
 
-The MVP intentionally supports one shared workspace mapped to one repository, local-first operation, deterministic lexical/metadata retrieval, and explicit agent feedback. Authentication, multiple workspaces, semantic embeddings, automated background grooming, and hosted deployment are follow-on work.
+The current implementation supports GitHub authentication, multiple discoverable
+workspaces mapped one-to-one to public repositories, reader/writer/admin/owner
+membership, access requests, non-expiring revocable MCP tokens, deterministic
+lexical/metadata retrieval, and explicit agent feedback. Semantic embeddings,
+automated background grooming, private repositories, and hosted deployment remain
+follow-on work.
 
 ## Built with Codex
 

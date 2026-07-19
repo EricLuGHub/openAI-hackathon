@@ -8,6 +8,7 @@
     "mcp:stdio": "tsx src/mcp/stdio.ts",
     "db:push": "tsx src/database/migrate.ts",
     "db:seed": "tsx src/database/seed.ts",
+    "token:create": "tsx src/auth/create-token.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -625,6 +625,104 @@ label,
     opacity: 0.4;
   }
 }
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 24px;
+  text-align: center;
+}
+.github-sign-in,
+.workspace-create button,
+.workspace-discovery button {
+  border: 1px solid var(--acid);
+  background: var(--acid);
+  color: #080a08;
+  padding: 12px 18px;
+  font: 700 12px var(--mono);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+}
+.access-panel {
+  display: grid;
+  gap: 10px;
+}
+.access-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 14px 16px;
+}
+.access-row p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+.access-row button,
+.token-title button {
+  border: 1px solid var(--acid);
+  background: transparent;
+  color: var(--acid);
+  padding: 8px 10px;
+  font: 700 10px var(--mono);
+  cursor: pointer;
+  margin-left: 6px;
+}
+.token-title {
+  margin-top: 30px;
+}
+.token-once {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--acid);
+  padding: 16px;
+  color: var(--acid);
+}
+.token-once code {
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.workspace-create {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+.workspace-create input {
+  flex: 1;
+  min-width: 260px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  padding: 12px;
+  font: 12px var(--mono);
+}
+.workspace-discovery {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+}
+.workspace-discovery input {
+  min-width: 240px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  padding: 10px;
+  font: 11px var(--mono);
+}
+.workspace-discovery button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.workspace-discovery button {
+  background: transparent;
+  color: var(--acid);
+  white-space: nowrap;
+}
 @media (max-width: 1000px) {
   .grid {
     grid-template-columns: 1fr;

@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
 
 type Experience = {
   id: string;
@@ -31,7 +37,37 @@ type Session = {
   startedAt: string;
   outcome?: string;
 };
-type View = "memory" | "sessions" | "signals";
+type View = "memory" | "sessions" | "signals" | "access";
+type Workspace = {
+  id: string;
+  canonical_key: string;
+  repository_owner: string;
+  repository_name: string;
+  role: "owner" | "admin" | "writer" | "reader" | null;
+  request_status?: string;
+  request_reason?: string;
+};
+type AccessRequest = {
+  id: string;
+  github_username?: string;
+  display_name: string;
+  requested_role: "reader" | "writer";
+  status: string;
+  message?: string;
+};
+type PersonalToken = {
+  id: string;
+  name: string;
+  token_prefix: string;
+  token_last_four: string;
+  revoked_at?: string;
+};
+type WorkspaceMember = {
+  id: string;
+  github_username?: string;
+  display_name: string;
+  role: "owner" | "admin" | "writer" | "reader";
+};
 
 const API =
   process.env.NEXT_PUBLIC_AGENT_HADERACH_API_URL ?? "http://127.0.0.1:3001";
@@ -68,12 +104,68 @@ export default function Dashboard() {
   const [type, setType] = useState("all");
   const [live, setLive] = useState(false);
   const [view, setView] = useState<View>("memory");
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [workspaceId, setWorkspaceId] = useState("");
+  const [repositoryUrl, setRepositoryUrl] = useState("");
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [tokens, setTokens] = useState<PersonalToken[]>([]);
+  const [newToken, setNewToken] = useState("");
+  const [workspaceQuery, setWorkspaceQuery] = useState("");
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
 
   const load = useCallback(async () => {
     try {
+      const me = await fetch(`${API}/api/me`, { credentials: "include" });
+      if (me.status === 401) {
+        setSignedIn(false);
+        setLive(false);
+        return;
+      }
+      if (!me.ok) throw new Error("offline");
+      setSignedIn(true);
+      const workspaceResponse = await fetch(`${API}/api/workspaces`, {
+        credentials: "include",
+      });
+      if (!workspaceResponse.ok) throw new Error("offline");
+      const workspaceRows = (await workspaceResponse.json()) as Workspace[];
+      setWorkspaces(workspaceRows);
+      const selected =
+        workspaceRows.find((workspace) => workspace.id === workspaceId) ??
+        workspaceRows.find((workspace) => workspace.role);
+      if (!selected?.role) {
+        setExperiences([]);
+        setSessions([]);
+        setLive(true);
+        return;
+      }
+      if (!workspaceId) setWorkspaceId(selected.id);
+      const tokenResponse = await fetch(`${API}/api/tokens`, {
+        credentials: "include",
+      });
+      if (tokenResponse.ok) setTokens(await tokenResponse.json());
+      if (selected.role === "owner" || selected.role === "admin") {
+        const requestResponse = await fetch(
+          `${API}/api/workspaces/${selected.id}/access-requests`,
+          { credentials: "include" },
+        );
+        if (requestResponse.ok) setAccessRequests(await requestResponse.json());
+      } else {
+        setAccessRequests([]);
+      }
+      const membersResponse = await fetch(
+        `${API}/api/workspaces/${selected.id}/members`,
+        { credentials: "include" },
+      );
+      if (membersResponse.ok) setMembers(await membersResponse.json());
+      const repository = encodeURIComponent(selected.canonical_key);
       const [e, s] = await Promise.all([
-        fetch(`${API}/api/experiences`),
-        fetch(`${API}/api/sessions`),
+        fetch(`${API}/api/experiences?repository=${repository}`, {
+          credentials: "include",
+        }),
+        fetch(`${API}/api/sessions?repository=${repository}`, {
+          credentials: "include",
+        }),
       ]);
       if (!e.ok || !s.ok) throw new Error("offline");
       const experienceRows = await e.json();
@@ -104,7 +196,7 @@ export default function Dashboard() {
     } catch {
       setLive(false);
     }
-  }, []);
+  }, [workspaceId]);
 
   useEffect(() => {
     load();
@@ -132,8 +224,93 @@ export default function Dashboard() {
     setSelected(entry);
     const response = await fetch(
       `${API}/api/experiences/${entry.id}?detail=full`,
+      {
+        credentials: "include",
+      },
     );
     if (response.ok) setSelected(await response.json());
+  }
+
+  async function createWorkspace(event: FormEvent) {
+    event.preventDefault();
+    const response = await fetch(`${API}/api/workspaces`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repositoryUrl }),
+    });
+    if (!response.ok) return;
+    const workspace = (await response.json()) as Workspace;
+    setRepositoryUrl("");
+    setWorkspaceId(workspace.id);
+    await load();
+  }
+
+  async function requestAccess(workspace: Workspace) {
+    const response = await fetch(
+      `${API}/api/workspaces/${workspace.id}/access-requests`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "reader" }),
+      },
+    );
+    if (response.ok) await load();
+  }
+
+  async function decideAccess(
+    requestId: string,
+    decision: "approved" | "rejected",
+  ) {
+    const reason =
+      decision === "rejected"
+        ? window.prompt("Reason visible to the requester (optional)") ||
+          undefined
+        : undefined;
+    const response = await fetch(
+      `${API}/api/workspaces/${workspaceId}/access-requests/${requestId}/decision`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, reason }),
+      },
+    );
+    if (response.ok) await load();
+  }
+
+  async function createToken() {
+    const response = await fetch(`${API}/api/tokens`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Codex" }),
+    });
+    if (!response.ok) return;
+    const created = (await response.json()) as { token: string };
+    setNewToken(created.token);
+    await load();
+  }
+
+  async function revokeToken(tokenId: string) {
+    const response = await fetch(`${API}/api/tokens/${tokenId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (response.ok) await load();
+  }
+
+  if (signedIn === false) {
+    return (
+      <main className="auth-screen">
+        <BrandLogo />
+        <p>Shared repository intelligence for coding agents.</p>
+        <a className="github-sign-in" href={`${API}/auth/github/start`}>
+          Continue with GitHub
+        </a>
+      </main>
+    );
   }
 
   return (
@@ -165,6 +342,13 @@ export default function Dashboard() {
           >
             ◎<small>Signals</small>
           </button>
+          <button
+            className={view === "access" ? "active" : ""}
+            onClick={() => setView("access")}
+            aria-label="Workspace access and MCP tokens"
+          >
+            ◈<small>Access</small>
+          </button>
         </nav>
         <div className="pulse" title={live ? "API connected" : "API offline"}>
           <i className={live ? "online" : ""} />
@@ -176,11 +360,66 @@ export default function Dashboard() {
             <p className="eyebrow">COLLECTIVE REPOSITORY INTELLIGENCE</p>
             <BrandLogo />
           </div>
-          <div className="repo" title="MVP repository scope">
-            <span>acme / checkout</span>
-            <b>⌄</b>
-          </div>
+          <select
+            className="repo"
+            aria-label="Workspace"
+            value={workspaceId}
+            onChange={(event) => setWorkspaceId(event.target.value)}
+          >
+            <option value="">Select workspace</option>
+            {workspaces
+              .filter((workspace) => workspace.role)
+              .map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.repository_owner} / {workspace.repository_name}
+                </option>
+              ))}
+          </select>
         </header>
+        <form className="workspace-create" onSubmit={createWorkspace}>
+          <input
+            type="url"
+            required
+            value={repositoryUrl}
+            onChange={(event) => setRepositoryUrl(event.target.value)}
+            placeholder="https://github.com/owner/repository"
+            aria-label="Public GitHub repository URL"
+          />
+          <button type="submit">CREATE WORKSPACE</button>
+        </form>
+        {workspaces.some((workspace) => !workspace.role) && (
+          <div className="workspace-discovery">
+            <input
+              value={workspaceQuery}
+              onChange={(event) => setWorkspaceQuery(event.target.value)}
+              placeholder="Find a repository workspace…"
+              aria-label="Find a repository workspace"
+            />
+            {workspaces
+              .filter(
+                (workspace) =>
+                  !workspace.role &&
+                  workspace.canonical_key
+                    .toLowerCase()
+                    .includes(workspaceQuery.toLowerCase()),
+              )
+              .slice(0, 4)
+              .map((workspace) => (
+                <button
+                  key={workspace.id}
+                  onClick={() => requestAccess(workspace)}
+                  disabled={workspace.request_status === "pending"}
+                >
+                  {workspace.request_status === "pending"
+                    ? "Request pending for "
+                    : workspace.request_status === "rejected"
+                      ? `Rejected${workspace.request_reason ? `: ${workspace.request_reason}` : ""} · Request again for `
+                      : "Request access to "}
+                  {workspace.repository_owner}/{workspace.repository_name}
+                </button>
+              ))}
+          </div>
+        )}
         <div className="metrics">
           <article>
             <label>EXPERIENCES</label>
@@ -396,6 +635,88 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </section>
+        )}
+        {view === "access" && (
+          <section className="view-panel access-panel">
+            <div className="section-title">
+              <span>ACCESS REQUESTS</span>
+              <small>
+                {
+                  accessRequests.filter(
+                    (request) => request.status === "pending",
+                  ).length
+                }{" "}
+                PENDING
+              </small>
+            </div>
+            {accessRequests.map((request) => (
+              <article className="access-row" key={request.id}>
+                <div>
+                  <b>@{request.github_username ?? request.display_name}</b>
+                  <p>
+                    {request.requested_role} · {request.message || "No message"}
+                  </p>
+                </div>
+                <span>{request.status}</span>
+                {request.status === "pending" && (
+                  <div>
+                    <button
+                      onClick={() => decideAccess(request.id, "approved")}
+                    >
+                      APPROVE
+                    </button>
+                    <button
+                      onClick={() => decideAccess(request.id, "rejected")}
+                    >
+                      REJECT
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+            {!accessRequests.length && (
+              <div className="empty">
+                No access requests for this workspace.
+              </div>
+            )}
+            <div className="section-title token-title">
+              <span>MEMBERS</span>
+              <small>{members.length} ACTIVE</small>
+            </div>
+            {members.map((member) => (
+              <article className="access-row" key={member.id}>
+                <div>
+                  <b>@{member.github_username ?? member.display_name}</b>
+                  <p>{member.display_name}</p>
+                </div>
+                <span>{member.role}</span>
+              </article>
+            ))}
+            <div className="section-title token-title">
+              <span>MCP TOKENS</span>
+              <button onClick={createToken}>CREATE TOKEN</button>
+            </div>
+            {newToken && (
+              <div className="token-once">
+                <b>Copy this token now. It will not be shown again.</b>
+                <code>{newToken}</code>
+              </div>
+            )}
+            {tokens.map((token) => (
+              <article className="access-row" key={token.id}>
+                <div>
+                  <b>{token.name}</b>
+                  <p>
+                    {token.token_prefix}…{token.token_last_four}
+                  </p>
+                </div>
+                <span>{token.revoked_at ? "revoked" : "active"}</span>
+                {!token.revoked_at && (
+                  <button onClick={() => revokeToken(token.id)}>REVOKE</button>
+                )}
+              </article>
+            ))}
           </section>
         )}
       </section>

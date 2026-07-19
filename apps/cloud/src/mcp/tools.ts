@@ -7,13 +7,21 @@ import {
   findExperienceSchema,
   sessionInputSchema,
 } from "@haderach/contracts";
+import type { AuthContext, TokenScope } from "../auth/personal-tokens.js";
 
 const jsonResult = (value: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
 });
 
-export function createMcpServer(repository: ExperienceRepository) {
+export function createMcpServer(
+  repository: ExperienceRepository,
+  auth: AuthContext,
+) {
   const server = new McpServer({ name: "agent-haderach", version: "0.1.0" });
+  const authorize = (scope: TokenScope) => {
+    if (!auth.scopes.includes(scope))
+      throw new Error(`Token is missing required scope: ${scope}`);
+  };
 
   server.registerTool(
     "start_session",
@@ -24,10 +32,12 @@ export function createMcpServer(repository: ExperienceRepository) {
       inputSchema: sessionInputSchema.shape,
       annotations: { readOnlyHint: false, idempotentHint: true },
     },
-    async (input) =>
-      jsonResult(
-        await repository.startSession(sessionInputSchema.parse(input)),
-      ),
+    async (input) => {
+      authorize("session:write");
+      return jsonResult(
+        await repository.startSession(sessionInputSchema.parse(input), auth),
+      );
+    },
   );
 
   server.registerTool(
@@ -39,10 +49,15 @@ export function createMcpServer(repository: ExperienceRepository) {
       inputSchema: findExperienceSchema.shape,
       annotations: { readOnlyHint: true },
     },
-    async (input) =>
-      jsonResult(
-        await repository.findExperience(findExperienceSchema.parse(input)),
-      ),
+    async (input) => {
+      authorize("experience:read");
+      return jsonResult(
+        await repository.findExperience(
+          findExperienceSchema.parse(input),
+          auth,
+        ),
+      );
+    },
   );
 
   server.registerTool(
@@ -57,10 +72,12 @@ export function createMcpServer(repository: ExperienceRepository) {
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ experienceId, detail }) =>
-      jsonResult(
-        await repository.getExperience(experienceId, detail === "full"),
-      ),
+    async ({ experienceId, detail }) => {
+      authorize("experience:read");
+      return jsonResult(
+        await repository.getExperience(experienceId, auth, detail === "full"),
+      );
+    },
   );
 
   server.registerTool(
@@ -72,10 +89,15 @@ export function createMcpServer(repository: ExperienceRepository) {
       inputSchema: experienceInputSchema.shape,
       annotations: { readOnlyHint: false, idempotentHint: false },
     },
-    async (input) =>
-      jsonResult(
-        await repository.createExperience(experienceInputSchema.parse(input)),
-      ),
+    async (input) => {
+      authorize("experience:write");
+      return jsonResult(
+        await repository.createExperience(
+          experienceInputSchema.parse(input),
+          auth,
+        ),
+      );
+    },
   );
 
   server.registerTool(
@@ -87,10 +109,12 @@ export function createMcpServer(repository: ExperienceRepository) {
       inputSchema: feedbackInputSchema.shape,
       annotations: { readOnlyHint: false, idempotentHint: false },
     },
-    async (input) =>
-      jsonResult(
-        await repository.recordFeedback(feedbackInputSchema.parse(input)),
-      ),
+    async (input) => {
+      authorize("feedback:write");
+      return jsonResult(
+        await repository.recordFeedback(feedbackInputSchema.parse(input), auth),
+      );
+    },
   );
 
   server.registerTool(
@@ -107,8 +131,10 @@ export function createMcpServer(repository: ExperienceRepository) {
       },
       annotations: { readOnlyHint: false, idempotentHint: true },
     },
-    async ({ sessionId, ...state }) =>
-      jsonResult(await repository.updateSession(sessionId, state)),
+    async ({ sessionId, ...state }) => {
+      authorize("session:write");
+      return jsonResult(await repository.updateSession(sessionId, state, auth));
+    },
   );
 
   server.registerTool(
@@ -124,18 +150,24 @@ export function createMcpServer(repository: ExperienceRepository) {
       },
       annotations: { readOnlyHint: false, idempotentHint: true },
     },
-    async ({ sessionId, status, outcome }) =>
-      jsonResult(
-        await repository.updateSession(sessionId, {
-          status,
-          outcome,
-          finished: true,
-        }),
-      ),
+    async ({ sessionId, status, outcome }) => {
+      authorize("session:write");
+      return jsonResult(
+        await repository.updateSession(
+          sessionId,
+          {
+            status,
+            outcome,
+            finished: true,
+          },
+          auth,
+        ),
+      );
+    },
   );
 
   const collaborationSchema = {
-    sessionId: z.string().uuid().optional(),
+    sessionId: z.string().uuid(),
     taskSummary: z.string().min(1),
     summary: z.string().min(1),
     detail: z.string().optional(),
@@ -151,26 +183,31 @@ export function createMcpServer(repository: ExperienceRepository) {
   const saveCollaboration = async (
     type: "question" | "answer" | "incident",
     input: z.infer<z.ZodObject<typeof collaborationSchema>>,
-  ) =>
-    repository.createExperience({
-      type,
-      sessionId: input.sessionId,
-      taskSummary: input.taskSummary,
-      content: { summary: input.summary, detail: input.detail, steps: [] },
-      scope: {
-        paths: input.paths,
-        services: input.services,
-        tools: [],
-        errorSignatures: [],
+  ) => {
+    authorize("collaboration:write");
+    return repository.createExperience(
+      {
+        type,
+        sessionId: input.sessionId,
+        taskSummary: input.taskSummary,
+        content: { summary: input.summary, detail: input.detail, steps: [] },
+        scope: {
+          paths: input.paths,
+          services: input.services,
+          tools: [],
+          errorSignatures: [],
+        },
+        retrieval: { keywords: input.keywords, relatedTerms: [], aliases: [] },
+        evidence: input.evidence,
+        outcomeStatus: "unknown",
+        tests: [],
+        revision: input.revision,
+        confidence: "observed",
+        status: "current",
       },
-      retrieval: { keywords: input.keywords, relatedTerms: [], aliases: [] },
-      evidence: input.evidence,
-      outcomeStatus: "unknown",
-      tests: [],
-      revision: input.revision,
-      confidence: "observed",
-      status: "current",
-    });
+      auth,
+    );
+  };
 
   server.registerTool(
     "publish_question",
@@ -192,13 +229,18 @@ export function createMcpServer(repository: ExperienceRepository) {
       inputSchema: findExperienceSchema.omit({ types: true }).shape,
       annotations: { readOnlyHint: true },
     },
-    async (input) =>
-      jsonResult(
-        await repository.findExperience({
-          ...findExperienceSchema.omit({ types: true }).parse(input),
-          types: ["question"],
-        }),
-      ),
+    async (input) => {
+      authorize("collaboration:read");
+      return jsonResult(
+        await repository.findExperience(
+          {
+            ...findExperienceSchema.omit({ types: true }).parse(input),
+            types: ["question"],
+          },
+          auth,
+        ),
+      );
+    },
   );
 
   server.registerTool(

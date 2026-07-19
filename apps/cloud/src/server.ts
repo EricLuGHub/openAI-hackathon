@@ -5,26 +5,48 @@ import { cors } from "hono/cors";
 import { ExperienceRepository } from "./services/experience-repository.js";
 import { createApi } from "./api/routes.js";
 import { createMcpServer } from "./mcp/tools.js";
+import {
+  AuthenticationError,
+  PersonalTokenService,
+  type AuthContext,
+} from "./auth/personal-tokens.js";
+import { WorkspaceService } from "./services/workspace-service.js";
+import { GitHubAuthService } from "./auth/github-auth.js";
+import { createGitHubAuthRoutes } from "./auth/github-routes.js";
 
 const repository = new ExperienceRepository(
   process.env.DATABASE_URL ??
     "postgresql://postgres:postgres@127.0.0.1:55432/agent_haderach",
 );
 const app = new Hono();
-app.use("*", cors());
+const tokens = new PersonalTokenService(repository.client);
+const workspaces = new WorkspaceService(repository.client);
+const githubAuth = new GitHubAuthService(repository.client);
+app.use(
+  "*",
+  cors({
+    origin: process.env.WEB_APP_URL ?? "http://127.0.0.1:3000",
+    credentials: true,
+  }),
+);
 
 app.get("/health", (c) => c.json({ status: "ok", service: "agent-haderach" }));
-app.route("/api", createApi(repository));
+app.route("/auth", createGitHubAuthRoutes(githubAuth));
+app.route("/api", createApi(repository, tokens, workspaces, githubAuth));
 
 app.all("/mcp", async (c) => {
-  const secret = process.env.AGENT_HADERACH_API_SECRET;
-  if (secret && c.req.header("authorization") !== `Bearer ${secret}`)
+  let auth: AuthContext;
+  try {
+    auth = await tokens.authenticate(c.req.header("authorization"));
+  } catch (error) {
+    if (!(error instanceof AuthenticationError)) throw error;
     return c.json({ error: "Unauthorized" }, 401);
+  }
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
-  const mcp = createMcpServer(repository);
+  const mcp = createMcpServer(repository, auth);
   await mcp.connect(transport);
   return transport.handleRequest(c.req.raw);
 });
