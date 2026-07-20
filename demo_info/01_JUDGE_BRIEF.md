@@ -55,6 +55,32 @@ retrieves and verifies the relevant experience
 successful knowledge rises; stale knowledge falls
 ```
 
+## Repository-level collaboration between developers
+
+Each developer approaches a problem differently. They follow different clues,
+know different parts of the system, use their own prompts and agent setups, and
+often discover useful facts that another developer would not encounter. Today,
+much of that knowledge remains trapped in individual conversations, local notes,
+or the memory of the person who happened to investigate the problem.
+
+Haderach turns those independent investigations into a shared repository space.
+An agent contributes its developer's evidence-backed findings, while other
+agents retrieve, validate, refine, or challenge them. The objective is not to
+make every agent reason identically; it is to preserve the value produced by
+their different approaches and make it available to the whole repository.
+
+This creates collaboration at two levels:
+
+- agents inherit useful discoveries from other agents instead of repeatedly
+  starting from zero;
+- developers inherit the discoveries of other developers, even when they use
+  different tools, workflows, or specialized sets of agents.
+
+Haderach therefore does more than bring agents into a common workspace. It
+brings developers closer together through the collective work of their agents.
+The shared database becomes a durable bridge between individual engineering
+styles, turning parallel perspectives into repository-level intelligence.
+
 ## What makes it different
 
 Haderach does not attempt to replace repository search.
@@ -75,7 +101,8 @@ successful.
 
 - Remote MCP endpoint over Streamable HTTP.
 - Optional stdio MCP transport.
-- Repository- and task-scoped sessions.
+- Discoverable repository workspaces with role-based access requests.
+- Local accounts and non-expiring, revocable personal MCP tokens.
 - Progressive experience retrieval: compact search, then optional detail.
 - Deterministic ranking and token budgets.
 - Workflows, lessons, pitfalls, summaries, and handoffs.
@@ -84,7 +111,7 @@ successful.
 - Questions, answers, and repository-scoped service incidents.
 - REST API for the web dashboard.
 - PostgreSQL persistence.
-- Live dashboard for experience, sessions, collaboration, and reuse.
+- Live dashboard for experiences, workspace access, collaboration, and reuse.
 
 ## Technical architecture
 
@@ -190,14 +217,14 @@ current evaluation.
 
 The current project intentionally avoids pretending to be a production platform:
 
-- one shared workspace mapped to one repository;
-- local-first operation;
+- repository-scoped workspaces mapped one-to-one to public repositories;
+- preliminary hosted deployment rather than production-grade operations;
 - deterministic lexical and metadata retrieval;
 - explicit agent feedback;
 - no vector database;
 - no raw chain-of-thought storage;
 - no autonomous model inside the backend;
-- authentication and full multi-tenancy are follow-on work.
+- production hardening and organization-level administration are follow-on work.
 
 ## Honest status
 

@@ -3,6 +3,7 @@ import { optionalStringArray } from "./common.js";
 import { experienceTypes } from "./experience.js";
 
 export const findExperienceSchema = z.object({
+  repository: z.string().min(1),
   task: z.string().min(1),
   revision: z.string().min(1),
   paths: optionalStringArray,

@@ -22,7 +22,7 @@ Turn Agent Haderach into a shared hosted service where:
 
 The main security invariant is:
 
-> A user, token, session, or experience must never access or influence a
+> A user, token, or experience must never access or influence a
 > workspace unless its resolved identity is authorized for that workspace.
 
 ## Product model
@@ -32,7 +32,6 @@ User
  ├── Workspace A ↔ Repository A
  │    ├── owner / admins / writers / readers
  │    ├── pending access requests
- │    ├── agent sessions
  │    ├── experiences
  │    ├── feedback
  │    └── questions / incidents
@@ -43,7 +42,7 @@ User
 A workspace is the tenant, authorization, retrieval, and collaboration boundary.
 It maps to exactly one connected Git repository. In this document, "repository"
 means the Git repository, while "workspace" means the Haderach membership,
-settings, sessions, and shared experience surrounding that repository.
+settings and shared experience surrounding that repository.
 
 Organizations may later group workspaces for centralized billing, SSO, policy,
 and administration. Organization membership must remain optional and must not be
@@ -56,60 +55,30 @@ similar keywords.
 
 ## Identity types
 
-### Web user
+### Web user and local account
 
-A human who signs into the dashboard with GitHub. GitHub is the only sign-in
-provider in the initial release; email, magic links, and additional identity
+A human signs up with a unique Haderach username, unique email address, and
+password. The same form supports sign-in using either username or email.
+
+Passwords are hashed with scrypt using a unique random salt and are never stored
+or logged in plaintext. The initial release requires passwords of 10–200
+characters. Email delivery, verification, password reset, and external identity
 providers are deferred.
 
-The web application receives a short-lived, secure, HTTP-only session cookie.
-Provider access tokens are not exposed to browser JavaScript or reused as MCP
-tokens.
+Successful signup or sign-in creates a random web session. Only its SHA-256
+digest is stored. The browser receives the raw value in a secure, HTTP-only,
+SameSite cookie with a seven-day lifetime. Signing out revokes the server-side
+session immediately.
 
-### GitHub sign-in
-
-GitHub is the primary identity provider for the first hosted release because
-Haderach workspaces are commonly associated with GitHub repositories.
-
-The website exposes one **Continue with GitHub** flow for both sign-up and sign-in.
-
-#### Continue with GitHub
-
-1. The user selects **Continue with GitHub** on the sign-in page.
-2. The server starts an OAuth/OIDC authorization-code flow with PKCE and a
-   cryptographically random `state` value.
-3. GitHub authenticates the user and returns the authorization response only to
-   the server callback.
-4. The server resolves the stable GitHub account ID, username, display name,
-   avatar, and verified email where available.
-5. If that GitHub account is already linked, the existing Haderach user signs in.
-6. If it is not linked, a new Haderach user and connected identity are created.
-7. The server issues the normal secure Haderach web session cookie.
-
-The stable numeric/provider account ID is the identity key. GitHub usernames
-may change and therefore must not be used as foreign keys or authorization IDs.
-
-#### Identity versus repository authorization
-
-Signing in with or linking GitHub proves control of a GitHub account. It does
-not automatically grant access to Haderach workspaces.
-
-Haderach authorization still requires one of:
-
-- creator ownership;
-- an active workspace membership;
-- an approved access request.
-
-For a GitHub-backed workspace, the UI may display the requester's verified
-GitHub username and avatar to owners/admins. That is review context, not an
-automatic authorization decision.
+Account authentication does not automatically grant access to a workspace.
+Haderach authorization still requires creator ownership, an active workspace
+membership, or an approved access request. Workspace review screens display the
+requester's Haderach username.
 
 #### GitHub permissions and repository URLs
 
-GitHub authentication proves identity only. The initial release requests only
-the minimum profile scope needed to read the stable account ID, username, display
-name, and avatar. Email access is not required. No GitHub App installation or
-repository-management permission is required.
+GitHub is used only as the source of public repository URLs. No GitHub OAuth,
+GitHub App installation, or repository-management permission is required.
 
 To create a workspace, any signed-in Haderach user may paste the URL of an
 existing public GitHub repository. The service normalizes the URL, verifies that
@@ -121,17 +90,15 @@ workspace only; it does not imply ownership of the underlying repository.
 Private-repository verification, GitHub App installation, webhooks, and automatic
 repository import are deferred.
 
-#### GitHub session security
+#### Account security
 
-- validate `state`, PKCE verifier, issuer, audience, and redirect URI;
-- allow only registered callback URLs;
+- enforce case-insensitive uniqueness for username and email;
+- use a memory-hard password hash with a unique salt;
+- return a generic error for invalid sign-in credentials;
 - use secure, HTTP-only, SameSite cookies;
-- rotate the Haderach session after authentication and linking;
-- do not expose provider access tokens to the browser or MCP client;
-- encrypt any provider refresh token that must be retained;
-- request the minimum identity scopes needed;
-- record sign-in and failed-authentication events without storing OAuth codes;
-- rate-limit callback failures.
+- rate-limit signup and failed sign-in attempts before public deployment;
+- never expose password hashes or web-session values to the MCP client;
+- record signup, sign-in, sign-out, and failed-authentication audit events.
 
 ### Personal MCP token
 
@@ -192,7 +159,6 @@ Initial scopes:
 experience:read
 experience:write
 feedback:write
-session:write
 collaboration:read
 collaboration:write
 ```
@@ -220,15 +186,15 @@ private      — reserved for a later release
 ```
 
 Visibility controls discovery, not data access. Discoverable workspaces do not
-expose experience, sessions, member lists, or pending requests to non-members.
+expose experience, member lists, or pending requests to non-members.
 
 ### Workspace roles
 
 ```text
 owner  — full workspace control, ownership transfer, deletion, admins, and members
 admin  — read/write access plus membership and access-request administration
-writer — read access plus sessions, experience, feedback, questions, and answers
-reader — retrieve experience, questions, answers, incidents, and session summaries
+writer — read access plus experience, feedback, questions, and answers
+reader — retrieve experience, questions, answers, and incidents
 ```
 
 Every workspace has exactly one active owner. Only active workspace owners and
@@ -273,7 +239,7 @@ The requester chooses one of two access levels:
 
 ```text
 reader — view and retrieve shared experience
-writer — reader access plus contribute sessions, experience, and feedback
+writer — reader access plus contribute experience and feedback
 ```
 
 Users cannot request `admin` or `owner`. Those roles are granted only by the
@@ -357,7 +323,6 @@ expose other members or private workspace content to the requester.
 | -------------------------------------- | :----: | :----: | :---: | :---: |
 | Retrieve experience and evidence       |  Yes   |  Yes   |  Yes  |  Yes  |
 | View questions, answers, and incidents |  Yes   |  Yes   |  Yes  |  Yes  |
-| Start/update agent sessions            |   No   |  Yes   |  Yes  |  Yes  |
 | Save experience and feedback           |   No   |  Yes   |  Yes  |  Yes  |
 | Ask and answer questions               |   No   |  Yes   |  Yes  |  Yes  |
 | View workspace members                 |  Yes   |  Yes   |  Yes  |  Yes  |
@@ -400,7 +365,7 @@ The current `experiences.repository` text field will be replaced by a required
 
 ```text
 users
-connected_identities
+web_sessions
 workspaces
 workspace_memberships
 workspace_access_requests
@@ -413,22 +378,20 @@ Important fields:
 ```yaml
 users:
   id: UUID
-  primary_email: text | null
+  username: text
+  email: text
+  password_hash: text
   display_name: text
   avatar_url: text | null
   status: active | disabled
 
-connected_identities:
+web_sessions:
   id: UUID
   user_id: UUID
-  provider: github | future_provider
-  provider_subject: text
-  provider_username: text
-  email: text | null
-  email_verified: boolean
-  avatar_url: text | null
-  linked_at: timestamptz
-  last_authenticated_at: timestamptz
+  session_hash: text
+  expires_at: timestamptz
+  revoked_at: timestamptz | null
+  last_used_at: timestamptz | null
 
 workspaces:
   id: UUID
@@ -495,8 +458,8 @@ audit_events:
 Required constraints:
 
 - unique active membership per `(workspace_id, user_id)`;
-- unique connected identity per `(provider, provider_subject)`;
-- at least one connected identity or other valid sign-in credential per active user;
+- case-insensitive unique username and email;
+- password hash required for locally authenticated active users;
 - unique pending access request per `(workspace_id, requester_user_id)`;
 - `requested_role` restricted to `reader` or `writer`;
 - decision fields required for approved or rejected requests;
@@ -510,11 +473,6 @@ Required constraints:
 ### Existing-table changes
 
 ```text
-sessions
-  + workspace_id UUID NOT NULL
-  + actor_user_id UUID NOT NULL
-  + token_id UUID NULL
-
 experiences
   + workspace_id UUID NOT NULL
   + created_by_user_id UUID NOT NULL
@@ -528,9 +486,9 @@ experience_feedback
 Questions, answers, and incidents currently share the `experiences` table and
 therefore inherit its workspace scope.
 
-Composite constraints should prevent records from referring to sessions or
-experiences in another workspace. Application checks alone are not sufficient
-for cross-workspace foreign-key integrity.
+Constraints and scoped queries prevent feedback from referring to experience in
+another workspace. Application checks alone are not sufficient for
+cross-workspace integrity.
 
 ## Authorization architecture
 
@@ -606,28 +564,20 @@ Authentication occurs before creating the MCP server or dispatching a tool.
 The resolved user and token are injected into every handler; tool input can
 never override the authenticated user.
 
-### Session binding
+### Direct repository selection
 
-`start_session` gains a repository selector:
+Workspace-aware tools take a repository selector directly:
 
 ```yaml
 repository: github:sindresorhus/p-limit
 task: Implement limit.onIdle()
 revision: 42599eb
-branch: feature/on-idle
 ```
 
-The server resolves the canonical key, authorizes access, and binds the new
-session to that workspace. Subsequent session-scoped tools derive the workspace
-and repository identity from the session ID.
-
-`find_experience` should require either:
-
-- a valid `session_id`; or
-- an explicit repository canonical key.
-
-Using `session_id` is preferred because it reduces repeated tool arguments and
-prevents accidental repository drift during a conversation.
+The server resolves the canonical key and authorizes access for every operation.
+`find_experience`, `save_experience`, and collaboration tools require the
+repository key. This avoids a separate agent-session lifecycle and keeps
+authorization explicit.
 
 `get_experience`, feedback, questions, answers, and incidents must verify that
 the target belongs to the authorized repository even when the caller knows its
@@ -637,7 +587,7 @@ UUID.
 
 Required user journey:
 
-1. Sign up or sign in with GitHub.
+1. Create a Haderach account or sign in with username/email and password.
 2. Create a workspace for a GitHub repository, or discover an existing workspace.
 3. If creating it, become its owner; the workspace defaults to discoverable.
 4. If discovering it, request reader or writer access and wait for a decision.
@@ -648,8 +598,8 @@ Required user journey:
 
 Required dashboard additions:
 
-- sign-in page with a primary **Continue with GitHub** action;
-- account settings showing the signed-in GitHub username and avatar;
+- sign-up and sign-in forms for username, email, and password;
+- account settings showing the signed-in Haderach username and email;
 - workspace creation form with a GitHub repository URL field;
 - workspace switcher;
 - workspace settings and access list;
@@ -679,7 +629,6 @@ GET  /api/workspaces/:workspaceId
 
 GET  /api/workspaces/:workspaceId/experiences
 POST /api/workspaces/:workspaceId/experiences/search
-GET  /api/workspaces/:workspaceId/sessions
 
 GET    /api/workspaces/:workspaceId/members
 PATCH  /api/workspaces/:workspaceId/members/:userId
@@ -694,9 +643,9 @@ POST /api/workspaces/:workspaceId/access-requests/:requestId/cancel
 
 POST /api/workspaces/:workspaceId/transfer-ownership
 
-GET  /api/auth/github/start
-GET  /api/auth/github/callback
-GET  /api/account/identities
+POST /auth/signup
+POST /auth/signin
+POST /auth/signout
 
 GET    /api/tokens
 POST   /api/tokens
@@ -706,10 +655,8 @@ DELETE /api/tokens/:tokenId
 The server derives workspace membership from the authenticated user and never
 trusts a client-supplied `workspace_id` without authorization.
 
-Authentication callbacks are browser navigation endpoints rather than JSON APIs.
-The linking endpoint creates a short-lived server-side linking transaction and
-then redirects through GitHub. Callback parameters alone are never sufficient to
-select which Haderach user receives the identity.
+Authentication endpoints issue or revoke the HTTP-only web-session cookie. They
+never return password hashes or raw stored-session material.
 
 Access-request endpoints return the updated request and, on approval, the
 created membership. Decision endpoints require an expected request version or
@@ -743,8 +690,7 @@ authentication.
 The migration must preserve the existing evaluation data.
 
 1. Create one legacy user.
-2. Create workspace rows for every distinct `experiences.repository` value and
-   for the repository used by existing sessions.
+2. Create workspace rows for every distinct `experiences.repository` value.
 3. Make the legacy user the owner of every migrated workspace and
    create its active owner membership.
 4. Add nullable workspace and actor columns to existing tables.
@@ -769,7 +715,6 @@ Recommended indexes:
 ```text
 experiences(workspace_id, status, type)
 experiences(workspace_id, last_validated_at DESC)
-sessions(workspace_id, updated_at DESC)
 experience_feedback(workspace_id, experience_id)
 workspaces(canonical_key) UNIQUE
 workspace_memberships(workspace_id, user_id) UNIQUE
@@ -822,13 +767,13 @@ Additional controls:
 - implement token generation, hashing, lookup, and revocation;
 - authenticate `/mcp` before tool dispatch;
 - add scopes and repository authorization;
-- bind sessions to repositories;
+- require an authorized repository selector on workspace MCP operations;
 - update every MCP tool and contract;
 - document the bearer-token environment-variable setup for Codex.
 
 ### Phase 3 — Web identity and workspace management
 
-- add GitHub OAuth/OIDC sign-in, identity records, and secure web sessions;
+- add local account signup/sign-in and secure web sessions;
 - implement workspace membership and repository-URL connection;
 - implement workspace creation with transactional creator ownership;
 - implement reader/writer access requests and owner/admin decisions;
@@ -852,7 +797,7 @@ apps/cloud/src/
 ├── auth/
 │   ├── context.ts
 │   ├── middleware.ts
-│   ├── github.ts
+│   ├── local-auth.ts
 │   ├── permissions.ts
 │   ├── tokens.ts
 │   └── web-session.ts
@@ -885,7 +830,8 @@ packages/contracts/src/
 
 apps/web/app/
 ├── sign-in/
-├── auth/github/callback/
+├── sign-in/
+├── sign-up/
 ├── onboarding/
 ├── workspaces/[workspaceId]/
 │   ├── members/
@@ -911,16 +857,15 @@ database queries enforce scope, and clients cannot choose their own tenant.
 - token rotation does not interrupt the replacement token;
 - authentication errors do not echo secrets.
 
-### GitHub identity tests
+### Local account tests
 
-- Continue with GitHub creates one user and one connected identity for a new GitHub account.
-- A returning GitHub account signs into the same Haderach user even after its username changes.
-- Invalid, missing, expired, or replayed OAuth state is rejected.
-- An invalid PKCE verifier is rejected.
-- Callback redirects outside the registered allowlist are rejected.
-- Provider authorization codes and tokens never appear in application logs.
-- Signing in with GitHub alone does not grant workspace access.
-- GitHub sign-in does not request repository-management permissions.
+- signup creates one user with normalized, unique username and email;
+- password plaintext is never stored;
+- the correct password verifies and an incorrect password fails;
+- sign-in accepts username or email without revealing which field was incorrect;
+- successful authentication issues a hashed, revocable web session;
+- signout immediately invalidates the session;
+- account authentication alone does not grant workspace access;
 - Any signed-in user can create a workspace from a valid public repository URL.
 - Repository ownership or collaborator status is not required for workspace creation.
 
@@ -933,7 +878,6 @@ database queries enforce scope, and clients cannot choose their own tenant.
 - A repository owner can promote admins and transfer ownership.
 - A workspace rejects experience access from non-members even when it is discoverable.
 - An experience UUID from another repository returns `404`.
-- A session ID cannot be reused across repository boundaries.
 - Cross-repository feedback cannot change ranking.
 - Search never returns records from another repository.
 
@@ -963,13 +907,11 @@ database queries enforce scope, and clients cannot choose their own tenant.
 ### End-to-end test
 
 ```text
-Developer A signs in
-→ signs in with GitHub
+Developer A creates a Haderach account and signs in
 → pastes a public GitHub repository URL and creates Workspace A
 → automatically becomes Workspace A owner
 → creates an MCP token
-→ Codex starts a repository-bound session
-→ Codex saves experience
+→ Codex saves repository-scoped experience
 → Developer B discovers Repository A and requests reader access
 → Developer A sees the request in the Access requests tab and approves it
 → Developer B retrieves experience but cannot write it
@@ -983,9 +925,9 @@ Developer A signs in
 ## Acceptance criteria
 
 - no public endpoint accepts the current unauthenticated mode;
-- users can sign up and sign in with GitHub;
-- GitHub identities are keyed by stable provider ID rather than mutable username;
-- identity login does not bypass workspace membership;
+- users can create a local account and sign in with username or email;
+- passwords are salted, memory-hard hashes and never stored in plaintext;
+- account login does not bypass workspace membership;
 - workspace creation accepts and normalizes a valid public GitHub repository URL;
 - workspace creation does not require GitHub repository ownership or collaborator status;
 - Codex connects using a bearer token stored in an environment variable;
@@ -1004,7 +946,7 @@ Developer A signs in
 - approval creates an active membership exactly once and rejection records an
   auditable decision;
 - owners can transfer ownership and cannot leave before doing so;
-- every experience, session, and feedback record has an immutable repository
+- every experience and feedback record has an immutable repository
   scope;
 - search, detail retrieval, feedback, and collaboration pass isolation tests;
 - the dashboard can switch workspaces without leaking cached data;
@@ -1013,7 +955,7 @@ Developer A signs in
 
 ## Locked initial-release decisions
 
-1. GitHub is the only web sign-in provider.
+1. Username/email/password accounts are the only initial web sign-in method.
 2. Personal MCP tokens do not expire automatically; users can revoke and rotate them.
 3. Workspace creation accepts a public GitHub repository URL rather than importing repositories.
 4. Any signed-in user can create a workspace; GitHub repository ownership is not required.
@@ -1021,5 +963,5 @@ Developer A signs in
 6. New workspaces default to `discoverable`.
 7. Rejection reasons are visible to the requester.
 8. Direct invitations are deferred; users join by finding a workspace and requesting access.
-9. GitHub authentication requests only profile identity access. GitHub App and
-   repository permissions are not part of the initial release.
+9. GitHub is used only to validate public repository URLs; GitHub OAuth and
+   GitHub App permissions are not part of the initial release.

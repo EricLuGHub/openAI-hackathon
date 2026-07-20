@@ -153,7 +153,7 @@ reflect how much useful information actually exists.
 
 ## Granularity
 
-One agent session may produce several independent records. For example, a
+One agent task may produce several independent records. For example, a
 deployment investigation may generate:
 
 - one workflow describing successful validation;
@@ -162,14 +162,14 @@ deployment investigation may generate:
 - one summary of the final outcome.
 
 Records should be independently retrievable. A future agent should not need to
-load an entire session to use one lesson.
+load an entire task history to use one lesson.
 
 ### Agent-directed extraction — Decided
 
-The contributing agent decides which parts of a session are pertinent and
+The contributing agent decides which parts of its work are pertinent and
 reusable enough to store, and whether they should become one record or several
-independent records. There is no required number of entries per session; a
-session may produce many, one, or none.
+independent records. There is no stored agent-session entity and no required
+number of entries per task; a task may produce many, one, or none.
 
 The agent should prefer information that could save another agent meaningful
 work, prevent a repeated mistake, reproduce a successful workflow, explain an

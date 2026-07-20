@@ -77,7 +77,7 @@ This is an initial proof rather than a statistically significant benchmark. The 
 
 ## How it works
 
-- An agent opens a task-scoped session through MCP.
+- An agent searches a workspace directly through MCP.
 - Retrieval returns a ranked, token-budgeted set of compact experience cards.
 - The agent expands only a promising entry, verifies it against current code, and reports whether it helped.
 - Successful reuse raises the entry's ranking; stale or failed advice is demoted.
@@ -97,9 +97,9 @@ Browser ─────── REST API ──────┘        │
 | ------------------------- | --------------------------------------------------------------- |
 | `apps/cloud/src/api`      | REST endpoints used by the dashboard                            |
 | `apps/cloud/src/mcp`      | Remote MCP tools plus the optional stdio transport              |
-| `apps/cloud/src/services` | Experience retrieval, ranking, feedback, and session logic      |
+| `apps/cloud/src/services` | Experience retrieval, ranking, feedback, and workspace access   |
 | `apps/cloud/src/database` | PostgreSQL schema, migration, and seed tooling                  |
-| `apps/web`                | Live experience, reuse, and session dashboard                   |
+| `apps/web`                | Live experience, reuse, workspace, and access dashboard         |
 | `packages/contracts`      | Schemas and types shared across application boundaries          |
 | `workspace`               | Central repository, worktree, task, and agent operating runtime |
 | `docs`                    | Product and implementation specifications                       |
@@ -118,6 +118,10 @@ pnpm dev
 
 Open `http://127.0.0.1:3000`. The API and remote MCP endpoint run at `http://127.0.0.1:3001` and `/mcp` respectively. PostgreSQL is exposed on port `55432` to avoid common local port conflicts.
 
+Create a local account through the dashboard, create a workspace from a public
+GitHub repository URL, then create a personal MCP token from the **Access** view.
+Personal tokens do not expire automatically and can be revoked at any time.
+
 ## Connect Codex
 
 Add the local remote MCP endpoint:
@@ -125,6 +129,7 @@ Add the local remote MCP endpoint:
 ```toml
 [mcp_servers.haderach]
 url = "http://127.0.0.1:3001/mcp"
+bearer_token_env_var = "AGENT_HADERACH_TOKEN"
 ```
 
 Or use the stdio server from this checkout:
@@ -133,13 +138,20 @@ Or use the stdio server from this checkout:
 [mcp_servers.haderach]
 command = "npx"
 args = ["pnpm@10.15.0", "--dir", "/absolute/path/to/openAI-hackathon", "--filter", "@haderach/cloud", "mcp:stdio"]
+[mcp_servers.haderach.env]
+AGENT_HADERACH_TOKEN = "ahd_pat_..."
 ```
 
-For a public deployment, set `AGENT_HADERACH_API_SECRET` and send it as a Bearer token. Local development intentionally starts without accounts or multi-tenancy.
+Both transports require a personal MCP token. The raw token is displayed only
+once; the database stores its SHA-256 digest. Every MCP experience operation
+selects an authorized repository workspace directly.
 
 ## MCP workflow
 
-The main tools are `start_session`, `find_experience`, `get_experience`, `save_experience`, `record_experience_feedback`, `update_session`, and `finish_session`. Collaboration tools add repository-scoped questions, answers, and service incidents.
+The main tools are `find_experience`, `get_experience`, `save_experience`, and
+`record_experience_feedback`. Collaboration tools add repository-scoped
+questions, answers, and service incidents. There is no required agent-session
+lifecycle.
 
 Experience is progressive: search exposes a short summary and score; `get_experience` exposes cleaned detail only when requested. Raw chain-of-thought is never required or stored.
 
@@ -152,11 +164,31 @@ pnpm build
 curl http://127.0.0.1:3001/health
 ```
 
+## Deploy on Railway
+
+Deploy this monorepo as two services backed by one Railway PostgreSQL service:
+
+- **cloud** uses the repository `Dockerfile`, its default command, `PORT=3001`,
+  and the PostgreSQL `DATABASE_URL`. Configure its pre-deploy command as
+  `pnpm --filter @haderach/cloud db:push` and health check as `/health`.
+- **web** uses the same image with the start command
+  `pnpm --filter @haderach/web start`, `PORT=3000`, and
+  `CLOUD_SERVICE_URL=http://cloud.railway.internal:3001`.
+
+Expose public domains for both services. Users open the web domain; agents use
+`https://<cloud-domain>/mcp` with a personal MCP bearer token. PostgreSQL does
+not need a public domain.
+
 The real-repository experiment and repeatable instructions live in [docs/EVALUATION_RESULTS.md](docs/EVALUATION_RESULTS.md).
 
 ## Current scope
 
-The MVP intentionally supports one shared workspace mapped to one repository, local-first operation, deterministic lexical/metadata retrieval, and explicit agent feedback. Authentication, multiple workspaces, semantic embeddings, automated background grooming, and hosted deployment are follow-on work.
+The current implementation supports local username/email accounts, multiple discoverable
+workspaces mapped one-to-one to public repositories, reader/writer/admin/owner
+membership, access requests, non-expiring revocable MCP tokens, deterministic
+lexical/metadata retrieval, explicit agent feedback, and Railway deployment.
+Semantic embeddings, automated background grooming, and private repositories
+remain follow-on work.
 
 ## Built with Codex
 

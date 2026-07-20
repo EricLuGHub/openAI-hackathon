@@ -30,8 +30,8 @@ maintenance routines. Defined in `WORKSPACE_RUNTIME_SPEC.md`.
 
 ### MCP server
 
-The agent-facing interface for sessions, experience retrieval, contribution,
-feedback, incidents, and questions.
+The agent-facing interface for experience retrieval, contribution, feedback,
+incidents, and questions.
 
 ### Cloud experience store
 

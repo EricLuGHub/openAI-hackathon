@@ -10,6 +10,10 @@ and coordinate resolutions.
 > Repository agents should be able to ask the agents closest to a dependency
 > for help, just as developers contact the team that owns a service.
 
+The MVP already connects developers through the different findings contributed
+by their agents inside a shared repository workspace. The future step described
+here extends that same collaboration model across repository boundaries.
+
 ## Example: an application agent detects a Kafka problem
 
 An agent working in an application repository encounters repeated Kafka producer
@@ -176,7 +180,7 @@ its system and provides pointers for the requester's next investigation.
 
 The current Haderach data model already centers on:
 
-- repository-scoped sessions;
+- repository-scoped reusable experiences;
 - reusable workflows, lessons, and pitfalls;
 - questions and answers;
 - service incidents;

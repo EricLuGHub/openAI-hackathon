@@ -5,9 +5,9 @@ import type {
   ExperienceInput,
   FeedbackInput,
   FindExperienceInput,
-  SessionInput,
 } from "@haderach/contracts";
 import * as schema from "../database/schema.js";
+import type { AuthContext } from "../auth/personal-tokens.js";
 
 export type ExperienceCard = {
   id: string;
@@ -72,43 +72,38 @@ export class ExperienceRepository {
     await this.client.end();
   }
 
-  async startSession(input: SessionInput) {
-    const id = input.sessionId ?? randomUUID();
-    const [row] = await this.client`
-      INSERT INTO sessions (id, task, revision, branch, worktree)
-      VALUES (${id}, ${input.task}, ${input.revision}, ${input.branch ?? null}, ${input.worktree ?? null})
-      ON CONFLICT (id) DO UPDATE SET
-        task = EXCLUDED.task, revision = EXCLUDED.revision, branch = EXCLUDED.branch,
-        worktree = EXCLUDED.worktree, updated_at = now()
-      RETURNING *`;
-    return row;
+  private async workspaceForRepository(
+    auth: AuthContext,
+    repository: string,
+    write = false,
+  ) {
+    const canonicalKey = repository.startsWith("github:")
+      ? repository.toLowerCase()
+      : repository.includes(":")
+        ? repository
+        : `github:${repository
+            .replace(/^https?:\/\/github\.com\//, "")
+            .replace(/\.git$/, "")
+            .toLowerCase()}`;
+    const [workspace] = await this.client`
+      SELECT workspace.id, membership.role
+      FROM workspaces workspace
+      JOIN workspace_memberships membership ON membership.workspace_id = workspace.id
+      WHERE workspace.canonical_key = ${canonicalKey}
+        AND membership.user_id = ${auth.userId}
+        AND membership.status = 'active'
+        AND workspace.status = 'active'
+        AND (${!write} OR membership.role IN ('owner', 'admin', 'writer'))`;
+    if (!workspace) throw new Error("Workspace not found or access denied");
+    return String(workspace.id);
   }
 
-  async updateSession(
-    id: string,
-    state: {
-      status?: string;
-      currentState?: string;
-      outcome?: string;
-      finished?: boolean;
-    },
-  ) {
-    const [row] = await this.client`
-      UPDATE sessions SET
-        status = COALESCE(${state.status ?? null}, status),
-        current_state = COALESCE(${state.currentState ?? null}, current_state),
-        outcome = COALESCE(${state.outcome ?? null}, outcome),
-        finished_at = CASE WHEN ${state.finished ?? false} THEN now() ELSE finished_at END,
-        updated_at = now()
-      WHERE id = ${id}
-      RETURNING *`;
-    return row;
-  }
-
-  async createExperience(
-    input: ExperienceInput,
-    repository = "local/repository",
-  ) {
+  async createExperience(input: ExperienceInput, auth: AuthContext) {
+    const workspaceId = await this.workspaceForRepository(
+      auth,
+      input.repository,
+      true,
+    );
     const id = randomUUID();
     const ranking = calculateRanking({
       successfulUses: 0,
@@ -120,11 +115,12 @@ export class ExperienceRepository {
     const textArray = (values: string[]) => this.client.array(values, 25);
     const [row] = await this.client`
       INSERT INTO experiences (
-        id, session_id, type, repository, task_summary, summary, detail, steps,
+        id, workspace_id, actor_user_id, token_id, type, repository, task_summary, summary, detail, steps,
         paths, services, tools, error_signatures, keywords, related_terms, aliases,
         evidence, outcome_status, tests, revision, confidence, status, ranking_score
       ) VALUES (
-        ${id}, ${input.sessionId ?? null}, ${input.type}, ${repository}, ${input.taskSummary},
+        ${id}, ${workspaceId}, ${auth.userId}, ${auth.tokenId}, ${input.type},
+        ${input.repository}, ${input.taskSummary},
         ${input.content.summary}, ${input.content.detail ?? null}, ${textArray(input.content.steps)},
         ${textArray(input.scope.paths)}, ${textArray(input.scope.services)},
         ${textArray(input.scope.tools)}, ${textArray(input.scope.errorSignatures)},
@@ -136,7 +132,7 @@ export class ExperienceRepository {
     return row;
   }
 
-  async getExperience(id: string, full = false) {
+  async getExperience(id: string, auth: AuthContext, full = false) {
     const [row] = await this.client`
       SELECT id, type, repository, task_summary, summary,
         ${full ? this.client`detail` : this.client`NULL::text AS detail`},
@@ -144,11 +140,23 @@ export class ExperienceRepository {
         aliases, evidence, outcome_status, tests, revision, confidence, status,
         successful_uses, failed_uses, usefulness_score, ranking_score,
         created_at, last_revised_at, last_validated_at
-      FROM experiences WHERE id = ${id}`;
+      FROM experiences
+      WHERE id = ${id}
+        AND workspace_id IN (
+          SELECT workspace_id FROM workspace_memberships
+          WHERE user_id = ${auth.userId} AND status = 'active'
+        )`;
     return row;
   }
 
-  async findExperience(input: FindExperienceInput): Promise<ExperienceCard[]> {
+  async findExperience(
+    input: FindExperienceInput,
+    auth: AuthContext,
+  ): Promise<ExperienceCard[]> {
+    const workspaceId = await this.workspaceForRepository(
+      auth,
+      input.repository,
+    );
     const queryText = [input.task, input.error, ...input.keywords]
       .filter(Boolean)
       .join(" ");
@@ -172,7 +180,8 @@ export class ExperienceRepository {
           ranking_score * 2
         ) AS relevance_score
       FROM experiences
-      WHERE status IN ('current', 'partially_stale')
+      WHERE workspace_id = ${workspaceId}
+        AND status IN ('current', 'partially_stale')
         AND (${input.types.length === 0} OR type = ANY(${textArray(input.types)}::text[]))
       ORDER BY relevance_score DESC, last_validated_at DESC
       LIMIT ${Math.max(input.limit * 3, 10)}`;
@@ -206,11 +215,20 @@ export class ExperienceRepository {
     return cards;
   }
 
-  async recordFeedback(input: FeedbackInput) {
+  async recordFeedback(input: FeedbackInput, auth: AuthContext) {
     await this.client.begin(async (tx) => {
+      const [target] = await tx`
+        SELECT experience.workspace_id
+        FROM experiences experience
+        JOIN workspace_memberships membership ON membership.workspace_id = experience.workspace_id
+        WHERE experience.id = ${input.experienceId}
+          AND membership.user_id = ${auth.userId}
+          AND membership.status = 'active'
+          AND membership.role IN ('owner', 'admin', 'writer')`;
+      if (!target) throw new Error("Experience not found or access denied");
       await tx`INSERT INTO experience_feedback
-        (id, experience_id, session_id, relevant, still_valid, outcome, evidence)
-        VALUES (${randomUUID()}, ${input.experienceId}, ${input.sessionId ?? null},
+        (id, workspace_id, actor_user_id, token_id, experience_id, relevant, still_valid, outcome, evidence)
+        VALUES (${randomUUID()}, ${target.workspace_id as string}, ${auth.userId}, ${auth.tokenId}, ${input.experienceId},
           ${input.relevant}, ${input.stillValid}, ${input.outcome}, ${input.evidence ?? null})`;
       const [current] =
         await tx`SELECT * FROM experiences WHERE id = ${input.experienceId} FOR UPDATE`;
@@ -241,17 +259,13 @@ export class ExperienceRepository {
         usefulness_score=${usefulness}, ranking_score=${ranking}, status=${status},
         last_validated_at=now(), ranking_calculated_at=now() WHERE id=${input.experienceId}`;
     });
-    return this.getExperience(input.experienceId);
+    return this.getExperience(input.experienceId, auth);
   }
 
-  async listExperiences(limit = 50) {
+  async listExperiences(auth: AuthContext, repository: string, limit = 50) {
+    const workspaceId = await this.workspaceForRepository(auth, repository);
     return this
-      .client`SELECT * FROM experiences ORDER BY created_at DESC LIMIT ${limit}`;
-  }
-
-  async listSessions(limit = 50) {
-    return this
-      .client`SELECT * FROM sessions ORDER BY updated_at DESC LIMIT ${limit}`;
+      .client`SELECT * FROM experiences WHERE workspace_id = ${workspaceId} ORDER BY created_at DESC LIMIT ${limit}`;
   }
 }
 
