@@ -137,15 +137,44 @@ The Haderach backend contains no LLM and calls no AI API. Codex performs the
 judgment required to create, verify, and apply experience. The service remains
 model-agnostic.
 
-## How Codex was used
+## How we built it with Codex and GPT-5.6
 
-Codex was both the implementation agent and the participant in the evaluation:
+Codex powered by GPT-5.6 was part of the development process from design through
+deployment, and later became a participant in the product evaluation.
 
-- it built the application and MCP integration;
-- Agent A explored a real repository and generated structured experience;
-- Agent B retrieved that experience through MCP in a clean session;
-- Agent B verified the records and implemented independently;
-- it submitted objective successful-use feedback backed by passing tests.
+We followed a **spec-driven development** workflow. Before implementing each
+major subsystem, we worked with Codex to draft granular specifications for the
+system architecture, MCP server, experience store, workspace runtime,
+authentication, web interface, and evaluation methodology. We reviewed and
+revised those documents extensively before asking Codex to write the associated
+code. The specifications acted as shared contracts across the monorepo and gave
+the agent durable context for implementation decisions, boundaries, and
+acceptance criteria.
+
+Codex was also connected to Railway through Railway's MCP server. This allowed
+the development agent to inspect deployment state, configure the hosted
+services, deploy revisions, and diagnose failures from the same environment in
+which it developed the application. Deployments remained deliberate rather
+than automatically following every push.
+
+Finally, Codex served as a testing agent for Haderach itself. We launched clean,
+isolated Codex runs in controlled sandboxes and connected selected runs to the
+Haderach MCP server. This let us test the product as an agent would actually use
+it—not merely by calling its REST API:
+
+- an investigation agent explored a real repository and saved compact,
+  evidence-backed experience through MCP;
+- a separate agent started without the first agent's conversation or patch;
+- the second agent searched, expanded, verified, and applied the shared
+  experience while solving the task independently;
+- a control agent tackled the same task without Haderach;
+- we compared correctness, tests, time, and token consumption between the
+  conditions;
+- the Haderach-enabled agent submitted usefulness feedback only after verifying
+  the reused records against the code and test results.
+
+This made Codex both a collaborator used to build Haderach and a realistic
+client used to test whether Haderach improves agent work.
 
 ## Demonstrated impact
 

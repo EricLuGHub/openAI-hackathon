@@ -161,6 +161,14 @@ export function createApi(
       await workspaces.listMembers(c.get("auth"), c.req.param("workspaceId")),
     ),
   );
+  api.get("/workspaces/:workspaceId/network", async (c) =>
+    c.json(
+      await repository.getWorkspaceNetwork(
+        c.get("auth"),
+        c.req.param("workspaceId"),
+      ),
+    ),
+  );
   api.patch("/workspaces/:workspaceId/members/:userId", async (c) => {
     const input = z
       .object({ role: z.enum(["admin", "writer", "reader"]) })

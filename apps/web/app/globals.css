@@ -11,8 +11,15 @@
 * {
   box-sizing: border-box;
 }
+html,
 body {
-  margin: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-width: 100%;
+  background: #090b09 !important;
+  overscroll-behavior: none;
+}
+body {
   background: var(--bg);
   color: var(--ink);
   font-family: Manrope, system-ui, sans-serif;
@@ -747,6 +754,292 @@ label,
   color: var(--acid);
   white-space: nowrap;
 }
+.network-panel {
+  min-height: 620px;
+  overflow: hidden;
+}
+.network-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  min-height: 574px;
+}
+.network-stage {
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, #c8ff5508 0, transparent 32%),
+    linear-gradient(#111410aa 1px, transparent 1px),
+    linear-gradient(90deg, #111410aa 1px, transparent 1px), #0c0e0c;
+  background-size:
+    auto,
+    34px 34px,
+    34px 34px,
+    auto;
+}
+.network-stage:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 40%, #0c0e0ccc 100%);
+}
+.network-controls {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 5px;
+}
+.network-controls button {
+  border: 1px solid #30352d;
+  background: #0c0e0cdd;
+  color: #6f746a;
+  padding: 8px 10px;
+  font: 7px DM Mono;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.network-controls button.on {
+  color: var(--acid);
+  border-color: #577234;
+  box-shadow: inset 0 0 14px #c8ff5509;
+}
+.network-canvas {
+  width: 100%;
+  min-height: 540px;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+.network-orbits ellipse {
+  fill: none;
+  stroke: #2c312a;
+  stroke-width: 0.7;
+  stroke-dasharray: 3 8;
+}
+.network-edges line {
+  stroke: #30372d;
+  stroke-width: 1;
+  opacity: 0;
+  cursor: pointer;
+  animation: network-edge-in 0.7s ease forwards;
+  transition:
+    opacity 0.2s,
+    stroke 0.2s,
+    stroke-width 0.2s;
+}
+.network-edges line:hover,
+.network-edges line.selected {
+  stroke-width: 4;
+  opacity: 1;
+}
+.network-edges line.reuse {
+  stroke: var(--acid);
+  stroke-width: 2.5;
+  stroke-dasharray: 8 5;
+  filter: url(#network-glow);
+  animation:
+    network-edge-in 0.7s ease forwards,
+    network-flow 8s linear infinite;
+}
+.network-edges line.conversation {
+  stroke: var(--amber);
+  stroke-width: 1.8;
+  stroke-dasharray: 2 5;
+}
+.network-canvas marker path {
+  fill: var(--acid);
+}
+.network-nodes g {
+  cursor: pointer;
+  opacity: 0;
+  animation: network-node-in 0.45s ease forwards;
+  transition: opacity 0.25s;
+  outline: none;
+}
+.network-nodes g.quiet {
+  opacity: 0.1 !important;
+}
+.network-nodes circle {
+  fill: #141814;
+  stroke: #6e7768;
+  stroke-width: 1.5;
+  transition:
+    stroke 0.2s,
+    stroke-width 0.2s,
+    fill 0.2s;
+}
+.network-nodes .agent circle:first-child {
+  fill: #1d2818;
+  stroke: var(--acid);
+  filter: url(#network-glow);
+}
+.network-nodes .agent circle.core {
+  fill: var(--acid);
+  stroke: none;
+}
+.network-nodes .pitfall circle,
+.network-nodes .incident circle,
+.network-nodes .question circle,
+.network-nodes .answer circle {
+  stroke: var(--amber);
+}
+.network-nodes g:hover circle:first-child,
+.network-nodes g.selected circle:first-child {
+  fill: #28351f;
+  stroke-width: 4;
+}
+.network-nodes text {
+  fill: #898f84;
+  font: 8px DM Mono;
+  pointer-events: none;
+}
+.network-nodes .agent text {
+  fill: #d9e1d0;
+  font-weight: 500;
+}
+.network-inspector {
+  border-left: 1px solid var(--line);
+  padding: 28px 24px;
+  background: #10120f;
+  position: relative;
+  z-index: 2;
+}
+.network-inspector h3 {
+  font-size: 19px;
+  line-height: 1.25;
+  margin: 10px 0 18px;
+}
+.network-inspector > p:not(.eyebrow),
+.network-inspector blockquote,
+.network-inspector time {
+  color: #858a80;
+  font-size: 10px;
+  line-height: 1.65;
+}
+.network-inspector blockquote {
+  border-left: 2px solid var(--acid);
+  margin: 20px 0;
+  padding: 4px 0 4px 14px;
+}
+.network-inspector dl {
+  margin-top: 25px;
+}
+.network-inspector dt,
+.network-inspector dd {
+  border-top: 1px solid var(--line);
+  padding: 9px 0;
+  margin: 0;
+  font: 8px DM Mono;
+}
+.network-inspector dt {
+  color: #5e635a;
+}
+.network-inspector dd {
+  color: #b6baaf;
+}
+.network-stat-stack {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  margin-top: 30px;
+}
+.network-stat-stack b {
+  background: #151814;
+  padding: 12px 8px;
+  color: var(--acid);
+  font: 18px DM Mono;
+}
+.network-stat-stack small {
+  display: block;
+  margin-top: 5px;
+  color: #656a61;
+  font-size: 6px;
+}
+.network-legend {
+  position: absolute;
+  z-index: 2;
+  bottom: 16px;
+  left: 18px;
+  display: flex;
+  gap: 16px;
+  color: #666b62;
+  font: 7px DM Mono;
+}
+.network-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.network-legend i {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  border-radius: 50%;
+  border: 1px solid #788174;
+}
+.network-legend .agent-dot {
+  background: var(--acid);
+  border-color: var(--acid);
+  box-shadow: 0 0 6px #c8ff5588;
+}
+.network-legend .reuse-line,
+.network-legend .conversation-line {
+  width: 14px;
+  height: 0;
+  border: 0;
+  border-top: 2px solid var(--acid);
+  border-radius: 0;
+}
+.network-legend .conversation-line {
+  border-color: var(--amber);
+  border-top-style: dashed;
+}
+.network-empty {
+  min-height: 570px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  background: radial-gradient(circle, #c8ff5508, transparent 38%);
+}
+.network-empty span {
+  color: var(--acid);
+  font-size: 38px;
+}
+.network-empty h3 {
+  margin: 16px 0 8px;
+}
+.network-empty p {
+  max-width: 440px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+@keyframes network-node-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes network-edge-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+@keyframes network-flow {
+  to {
+    stroke-dashoffset: -104;
+  }
+}
 @media (max-width: 1000px) {
   .grid {
     grid-template-columns: 1fr;
@@ -759,6 +1052,14 @@ label,
   }
   .signal-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  .network-layout {
+    grid-template-columns: 1fr;
+  }
+  .network-inspector {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    min-height: 180px;
   }
 }
 @media (max-width: 650px) {

@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "db:push": "pnpm --filter @haderach/cloud db:push",
-    "db:seed": "pnpm --filter @haderach/cloud db:seed"
+    "db:seed": "pnpm --filter @haderach/cloud db:seed",
+    "workspace:setup": "tsx scripts/setup-workspace.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

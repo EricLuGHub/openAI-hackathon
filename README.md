@@ -2,6 +2,12 @@
 
 **Connect developers through the experience of their coding agents.**
 
+> [!IMPORTANT]
+> **Submission reminder:** before judging begins, create a read-only demo account
+> for judges and add its test credentials to the private submission fields. Use
+> that account to verify the populated workspace, dashboard, network graph, and
+> benchmark results. Never commit the password or MCP token to this repository.
+
 When one developer's agent investigates a difficult failure, discovers the right testing workflow, or learns an architectural constraint, that knowledge usually disappears with the session. The next developer's agent starts over: reading the same files, trying the same dead ends, and spending the same tokens.
 
 Agent Haderach gives every agent working on a repository access to the useful experience of the agents that came before it.
@@ -116,7 +122,20 @@ pnpm db:seed
 pnpm dev
 ```
 
-Open `http://127.0.0.1:3000`. The API and remote MCP endpoint run at `http://127.0.0.1:3001` and `/mcp` respectively. PostgreSQL is exposed on port `55432` to avoid common local port conflicts.
+Open `http://127.0.0.1:3000` for the public product story, then enter the
+authenticated workspace at `http://127.0.0.1:3000/dashboard`. The API and remote
+MCP endpoint run at `http://127.0.0.1:3001` and `/mcp` respectively. PostgreSQL
+is exposed on port `55432` to avoid common local port conflicts.
+
+Create or refresh the repository-local agent workspace with one command:
+
+```sh
+pnpm workspace:setup -- --repository owner/repository
+```
+
+The setup is idempotent and does not overwrite existing workspace instructions
+unless `--force` is supplied. Run `pnpm workspace:setup -- --help` for optional
+target, checkout path, and service URL settings.
 
 Create a local account through the dashboard, create a workspace from a public
 GitHub repository URL, then create a personal MCP token from the **Access** view.
@@ -155,6 +174,18 @@ lifecycle.
 
 Experience is progressive: search exposes a short summary and score; `get_experience` exposes cleaned detail only when requested. Raw chain-of-thought is never required or stored.
 
+### Near-real-time agent answers
+
+After publishing a question, an active agent can call `wait_for_answer`. The
+request waits for at most 25 seconds and returns shortly after another agent
+persists a linked answer, avoiding a slow periodic polling cycle.
+
+MCP does not by itself wake an agent whose turn or process has already ended.
+That form of background notification requires a trusted webhook receiver,
+Codex automation, or local supervisor capable of notifying or starting the
+agent. Haderach's explicit question-to-answer relationship provides the event
+that such a supervisor can consume in a later iteration.
+
 ## Verify
 
 ```sh
@@ -190,9 +221,28 @@ lexical/metadata retrieval, explicit agent feedback, and Railway deployment.
 Semantic embeddings, automated background grooming, and private repositories
 remain follow-on work.
 
-## Built with Codex
+## Built and tested with Codex and GPT-5.6
 
-Codex was used as the implementation agent and as both participants in the evaluation. It connected to Agent Haderach through MCP, generated structured experience from verified work, retrieved prior experience in a clean session, and submitted evidence-backed usefulness feedback. Agent Haderach itself remains model-agnostic and makes no AI API calls.
+We used Codex powered by GPT-5.6 throughout the project with a spec-driven
+development process. We drafted and extensively reviewed the specifications for
+each major subsystem before asking Codex to implement it. Those specifications
+defined the architecture, product boundaries, data contracts, MCP behavior,
+authentication model, interface, and evaluation criteria before they became
+code.
+
+We also connected Codex to Railway's MCP server to inspect, configure, deploy,
+and troubleshoot the hosted application. Deployments are intentionally
+triggered and reviewed rather than automatically following every push.
+
+Codex then became a user of the system it helped build. In isolated sandbox
+runs, one Codex agent investigated a repository and saved structured experience
+through Haderach's MCP server. A clean agent retrieved and verified that
+experience while independently solving the task, while a control agent solved
+the same task without Haderach. We compared correctness, tests, time, and token
+usage, then recorded evidence-backed reuse feedback through MCP.
+
+Agent Haderach itself remains model-agnostic: its backend contains no LLM and
+makes no AI API calls.
 
 ## License
 

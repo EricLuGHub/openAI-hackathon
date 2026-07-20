@@ -47,6 +47,7 @@ export const evidenceSchema = z.object({
 export const experienceInputSchema = z.object({
   repository: z.string().min(1),
   type: z.enum(experienceTypes),
+  sourceExperienceId: z.string().uuid().optional(),
   taskSummary: z.string().min(1).max(2_000),
   content: experienceContentSchema,
   scope: experienceScopeSchema.default({}),

@@ -162,6 +162,10 @@ export const auditEvents = pgTable("audit_events", {
 
 export const experiences = pgTable("experiences", {
   id: uuid("id").primaryKey(),
+  sourceExperienceId: uuid("source_experience_id").references(
+    (): any => experiences.id,
+    { onDelete: "set null" },
+  ),
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspaces.id),

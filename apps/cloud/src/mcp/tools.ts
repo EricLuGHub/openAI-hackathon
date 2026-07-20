@@ -111,6 +111,7 @@ export function createMcpServer(
     evidence: z
       .array(z.object({ label: z.string(), uri: z.string().url().optional() }))
       .default([]),
+    sourceExperienceId: z.string().uuid().optional(),
   };
 
   const saveCollaboration = async (
@@ -121,6 +122,7 @@ export function createMcpServer(
     return repository.createExperience(
       {
         type,
+        sourceExperienceId: input.sourceExperienceId,
         repository: input.repository,
         taskSummary: input.taskSummary,
         content: { summary: input.summary, detail: input.detail, steps: [] },
@@ -177,12 +179,38 @@ export function createMcpServer(
   );
 
   server.registerTool(
+    "wait_for_answer",
+    {
+      title: "Wait for a linked agent answer",
+      description:
+        "Keep this active MCP request open briefly and return as soon as another agent links an answer to the question. This does not wake an agent after its process or turn has ended.",
+      inputSchema: {
+        questionId: z.string().uuid(),
+        timeoutSeconds: z.number().int().min(1).max(25).default(20),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ questionId, timeoutSeconds }) => {
+      authorize("collaboration:read");
+      return jsonResult(
+        await repository.waitForAnswer(questionId, auth, timeoutSeconds),
+      );
+    },
+  );
+
+  server.registerTool(
     "answer_question",
     {
       title: "Answer agent question",
       description:
-        "Publish an evidenced answer to another agent's question. Include the question ID in keywords.",
-      inputSchema: collaborationSchema,
+        "Publish an evidenced answer linked to another agent's question.",
+      inputSchema: {
+        ...collaborationSchema,
+        sourceExperienceId: z
+          .string()
+          .uuid()
+          .describe("The question experience ID being answered"),
+      },
       annotations: { readOnlyHint: false },
     },
     async (input) => jsonResult(await saveCollaboration("answer", input)),

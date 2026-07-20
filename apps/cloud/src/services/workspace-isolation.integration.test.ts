@@ -92,6 +92,9 @@ suite("workspace isolation", () => {
         outsider,
       ),
     ).rejects.toThrow("access denied");
+    await expect(
+      repository.getWorkspaceNetwork(outsider, workspaceId),
+    ).rejects.toThrow("access denied");
   });
 
   it("allows a reader to search but not create experience", async () => {
@@ -114,6 +117,11 @@ suite("workspace isolation", () => {
       outsider,
     );
     expect(results.some((entry) => entry.id === experienceId)).toBe(true);
+    const network = await repository.getWorkspaceNetwork(outsider, workspaceId);
+    expect(
+      network.nodes.some((node) => node.id === `experience:${experienceId}`),
+    ).toBe(true);
+    expect(network.edges.some((edge) => edge.kind === "created")).toBe(true);
     await expect(
       repository.createExperience(
         {
@@ -144,5 +152,45 @@ suite("workspace isolation", () => {
     await expect(
       service.authenticate(`Bearer ${created.token}`),
     ).rejects.toThrow("Unauthorized");
+  });
+
+  it("returns a linked answer without requiring repeated question searches", async () => {
+    const base = {
+      repository: canonicalKey,
+      scope: { paths: [], services: [], tools: [], errorSignatures: [] },
+      retrieval: { keywords: [], relatedTerms: [], aliases: [] },
+      evidence: [],
+      outcomeStatus: "unknown" as const,
+      tests: [],
+      revision: "abc123",
+      confidence: "observed" as const,
+      status: "current" as const,
+    };
+    const question = await repository.createExperience(
+      {
+        ...base,
+        type: "question",
+        taskSummary: "How should this be tested?",
+        content: { summary: "Need the repository test command", steps: [] },
+      },
+      owner,
+    );
+    await repository.createExperience(
+      {
+        ...base,
+        type: "answer",
+        sourceExperienceId: String(question!.id),
+        taskSummary: "Use the integration suite",
+        content: { summary: "Run the integration tests", steps: [] },
+      },
+      owner,
+    );
+
+    const result = await repository.waitForAnswer(
+      String(question!.id),
+      outsider,
+      1,
+    );
+    expect(result.status).toBe("answered");
   });
 });

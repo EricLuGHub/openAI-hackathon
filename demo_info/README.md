@@ -1,5 +1,11 @@
 # Agent Haderach: Judge and Demo Information
 
+> [!IMPORTANT]
+> **Before submission:** provide judges with a read-only test account through the
+> hackathon's private credential field. Confirm that it opens the populated demo
+> workspace and exposes the benchmark results and interaction graph. Do not put
+> passwords or MCP tokens in these committed demo files.
+
 This directory contains the concise, judge-facing material for Agent Haderach.
 It separates measured results from product claims and future work.
 
@@ -10,6 +16,12 @@ It separates measured results from product claims and future work.
 3. [Three-minute demo runbook](03_DEMO_RUNBOOK.md) — video and live-demo sequence.
 4. [Verification guide](04_VERIFICATION_GUIDE.md) — how judges can run and inspect the project.
 5. [Future vision](05_FUTURE_VISION.md) — cross-repository communication and agent-to-agent escalation.
+
+## Visual story
+
+The primary judge-facing visual story now lives on the web application's public
+landing route. [The earlier before-and-after HTML slides](context-network-slides.html)
+remain as a standalone concept deck and presentation reference.
 
 ## One-sentence description
 

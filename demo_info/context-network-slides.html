@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Haderach — From Isolated Agents to Shared Experience</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap");
+      :root {
+        --bg: #090b09;
+        --panel: #111510;
+        --ink: #eef2e9;
+        --muted: #8a9185;
+        --line: #293027;
+        --acid: #c8ff55;
+        --amber: #ffbd66;
+        --cyan: #6ce5ef;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--bg);
+        font-family: Manrope, system-ui, sans-serif;
+        overflow-x: hidden;
+      }
+      body:before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.045;
+        z-index: 20;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+      .slide {
+        min-height: 100vh;
+        scroll-snap-align: start;
+        position: relative;
+        display: grid;
+        align-content: center;
+        padding: clamp(42px, 6vw, 96px);
+        overflow: hidden;
+        isolation: isolate;
+      }
+      .slide:after {
+        content: attr(data-slide);
+        position: absolute;
+        right: 5vw;
+        bottom: 3vw;
+        font: 10px DM Mono;
+        letter-spacing: 0.18em;
+        color: #51574e;
+      }
+      .glow {
+        position: absolute;
+        width: 46vw;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: #bfff4310;
+        filter: blur(70px);
+        z-index: -1;
+      }
+      .glow.one {
+        right: -14vw;
+        top: -20vw;
+      }
+      .glow.two {
+        left: -22vw;
+        bottom: -30vw;
+        background: #62dbe810;
+      }
+      .eyebrow {
+        margin: 0 0 20px;
+        color: var(--acid);
+        font: 500 11px DM Mono;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+      h1 {
+        max-width: 1100px;
+        font-size: clamp(52px, 7.4vw, 124px);
+        line-height: 0.92;
+        letter-spacing: -0.065em;
+        margin-bottom: 34px;
+      }
+      h2 {
+        max-width: 1050px;
+        font-size: clamp(39px, 5.2vw, 84px);
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+        margin-bottom: 24px;
+      }
+      h3 {
+        font-size: 18px;
+      }
+      .lead {
+        max-width: 920px;
+        color: #b2baae;
+        font-size: clamp(17px, 1.75vw, 27px);
+        line-height: 1.55;
+      }
+      .accent {
+        color: var(--acid);
+      }
+      .strike {
+        color: #747a70;
+        text-decoration: line-through;
+        text-decoration-color: var(--amber);
+      }
+      .brand {
+        position: absolute;
+        left: clamp(28px, 4vw, 72px);
+        top: 28px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font: 500 12px DM Mono;
+        letter-spacing: 0.14em;
+      }
+      .brand i {
+        width: 13px;
+        height: 13px;
+        border: 2px solid var(--acid);
+        border-radius: 50%;
+        box-shadow: 0 0 20px #c8ff5588;
+      }
+      .hint {
+        position: absolute;
+        right: clamp(28px, 4vw, 72px);
+        top: 30px;
+        color: #60665c;
+        font: 9px DM Mono;
+        letter-spacing: 0.12em;
+      }
+      .hero-line {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-top: 56px;
+        color: #7d8478;
+        font: 10px DM Mono;
+        letter-spacing: 0.1em;
+      }
+      .hero-line span {
+        width: 80px;
+        height: 1px;
+        background: linear-gradient(90deg, var(--acid), transparent);
+      }
+      .diagram {
+        border: 1px solid var(--line);
+        background: #0d100dcc;
+        position: relative;
+        overflow: hidden;
+      }
+      .today-grid {
+        display: grid;
+        grid-template-columns: 1fr 100px 1.1fr 100px 1fr;
+        align-items: center;
+        min-height: 385px;
+        padding: 42px;
+      }
+      .person-agent {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 18px;
+      }
+      .person {
+        width: 92px;
+        text-align: center;
+      }
+      .portrait {
+        width: 66px;
+        height: 66px;
+        margin: auto;
+        border: 1px solid #3b4439;
+        border-radius: 50%;
+        position: relative;
+        background: linear-gradient(145deg, #273027, #111511);
+      }
+      .portrait:before {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        left: 22px;
+        top: 12px;
+        border: 2px solid #aab3a5;
+        border-radius: 50%;
+      }
+      .portrait:after {
+        content: "";
+        position: absolute;
+        width: 36px;
+        height: 20px;
+        left: 14px;
+        bottom: 10px;
+        border: 2px solid #aab3a5;
+        border-radius: 22px 22px 8px 8px;
+        border-bottom: 0;
+      }
+      .caption {
+        display: block;
+        margin-top: 12px;
+        color: #8d9589;
+        font: 9px DM Mono;
+      }
+      .agent-shape {
+        width: 100px;
+        height: 116px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        position: relative;
+        clip-path: polygon(50% 0, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%);
+        background: #283326;
+      }
+      .agent-shape:before {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        clip-path: inherit;
+        background: #101510;
+      }
+      .agent-shape b,
+      .agent-shape small {
+        z-index: 1;
+      }
+      .agent-shape b {
+        color: var(--acid);
+        font: 20px DM Mono;
+      }
+      .agent-shape small {
+        position: absolute;
+        bottom: 31px;
+        font: 7px DM Mono;
+        color: #687164;
+      }
+      .arrow {
+        height: 1px;
+        background: #394038;
+        position: relative;
+      }
+      .arrow:after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: -4px;
+        border: 4px solid transparent;
+        border-left-color: #596255;
+      }
+      .arrow label {
+        position: absolute;
+        bottom: 10px;
+        width: 100%;
+        text-align: center;
+        color: #626a60;
+        font: 8px DM Mono;
+      }
+      .work {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .artifact {
+        min-height: 126px;
+        border: 1px solid #30372f;
+        padding: 17px;
+        background: #131712;
+        position: relative;
+      }
+      .artifact i {
+        display: block;
+        width: 28px;
+        height: 34px;
+        border: 1px solid #697166;
+        margin-bottom: 20px;
+        position: relative;
+      }
+      .artifact i:after {
+        content: "";
+        position: absolute;
+        inset: 8px 5px;
+        background: repeating-linear-gradient(
+          #697166 0 1px,
+          transparent 1px 6px
+        );
+      }
+      .artifact b {
+        display: block;
+        font-size: 11px;
+      }
+      .artifact small {
+        color: #687064;
+        font: 8px DM Mono;
+      }
+      .fade-doc {
+        opacity: 0.42;
+      }
+      .fade-doc:nth-child(2) {
+        transform: translateY(14px);
+      }
+      .loss {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        color: var(--amber);
+        font: 9px DM Mono;
+        letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      .loss:before {
+        content: "";
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        background: var(--amber);
+        border-radius: 50%;
+        margin-right: 8px;
+        box-shadow: 0 0 12px #ffbd6688;
+      }
+      .callout {
+        border-left: 3px solid var(--amber);
+        background: #ffbd6608;
+        padding: 18px 24px;
+        margin-top: 20px;
+        font-size: clamp(15px, 1.4vw, 21px);
+      }
+      .network-wrap {
+        display: grid;
+        grid-template-columns: 210px 1fr 210px;
+        align-items: center;
+        gap: 24px;
+        min-height: 490px;
+        padding: 28px 34px;
+      }
+      .human-stack {
+        display: grid;
+        justify-items: center;
+        gap: 16px;
+      }
+      .human-stack .agent-shape {
+        width: 88px;
+        height: 100px;
+      }
+      .human-stack .portrait {
+        width: 60px;
+        height: 60px;
+      }
+      .human-stack .portrait:before {
+        left: 19px;
+        top: 10px;
+      }
+      .human-stack .portrait:after {
+        left: 11px;
+        bottom: 8px;
+      }
+      .wisdom {
+        text-align: center;
+        color: #8d9589;
+        font: 9px/1.5 DM Mono;
+      }
+      .db-zone {
+        min-height: 430px;
+        position: relative;
+        display: grid;
+        place-items: center;
+      }
+      .db {
+        width: 260px;
+        height: 190px;
+        position: relative;
+        border: 2px solid var(--acid);
+        border-radius: 50%/16%;
+        background: #10180e;
+        box-shadow:
+          0 0 70px #c8ff5514,
+          inset 0 0 35px #c8ff550d;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        z-index: 3;
+      }
+      .db:before,
+      .db:after {
+        content: "";
+        position: absolute;
+        left: -2px;
+        width: 260px;
+        height: 52px;
+        border: 2px solid var(--acid);
+        border-radius: 50%;
+      }
+      .db:before {
+        top: -2px;
+        background: #182416;
+      }
+      .db:after {
+        bottom: -2px;
+        border-top-color: #52683a;
+      }
+      .db b {
+        z-index: 1;
+        font: 500 17px DM Mono;
+        color: var(--acid);
+      }
+      .db small {
+        z-index: 1;
+        margin-top: 8px;
+        color: #7d8974;
+        font: 8px DM Mono;
+      }
+      .entry {
+        position: absolute;
+        z-index: 4;
+        border: 1px solid #3b4935;
+        background: #151b13;
+        padding: 10px 12px;
+        width: 140px;
+        font: 8px DM Mono;
+        animation: float 4s ease-in-out infinite;
+      }
+      .entry strong {
+        display: block;
+        color: var(--acid);
+        margin-bottom: 5px;
+      }
+      .e1 {
+        left: 4%;
+        top: 14%;
+      }
+      .e2 {
+        right: 3%;
+        top: 19%;
+        animation-delay: -1s;
+      }
+      .e3 {
+        left: 2%;
+        bottom: 15%;
+        animation-delay: -2s;
+      }
+      .e4 {
+        right: 1%;
+        bottom: 12%;
+        animation-delay: -3s;
+      }
+      .flowline {
+        position: absolute;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--acid),
+          transparent
+        );
+        width: 44%;
+        z-index: 2;
+        animation: flow 2.2s linear infinite;
+      }
+      .flowline.left {
+        left: 0;
+        transform: rotate(8deg);
+      }
+      .flowline.right {
+        right: 0;
+        transform: rotate(-8deg);
+        animation-direction: reverse;
+      }
+      .pulse {
+        position: absolute;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--acid);
+        box-shadow: 0 0 16px var(--acid);
+        offset-path: path("M 0 0 L 360 48");
+        animation: travel 2.2s linear infinite;
+        z-index: 5;
+      }
+      .pulse.out {
+        offset-path: path("M 360 48 L 0 0");
+        right: 0;
+        animation-delay: -1.1s;
+      }
+      .verified {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--acid);
+        font: 8px DM Mono;
+        letter-spacing: 0.14em;
+      }
+      .compare {
+        display: grid;
+        grid-template-columns: 1fr 70px 1fr;
+        gap: 20px;
+        align-items: stretch;
+      }
+      .compare-panel {
+        border: 1px solid var(--line);
+        background: #10130f;
+        padding: 30px;
+        min-height: 420px;
+      }
+      .compare-panel.after {
+        border-color: #496034;
+        background: linear-gradient(145deg, #151d12, #0e110d);
+      }
+      .compare-panel h3 {
+        font-size: 25px;
+      }
+      .compare-panel > p {
+        color: var(--muted);
+        min-height: 52px;
+      }
+      .mini-flow {
+        display: grid;
+        gap: 10px;
+        margin-top: 28px;
+      }
+      .mini-flow div {
+        border: 1px solid #333a31;
+        padding: 14px 16px;
+        font: 10px DM Mono;
+        display: flex;
+        justify-content: space-between;
+      }
+      .mini-flow span {
+        color: #737b70;
+      }
+      .after .mini-flow div {
+        border-color: #405332;
+      }
+      .after .mini-flow b {
+        color: var(--acid);
+      }
+      .vs {
+        display: grid;
+        place-items: center;
+        color: #596056;
+        font: 10px DM Mono;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 22px;
+      }
+      .chips span {
+        border: 1px solid #35402e;
+        padding: 8px 10px;
+        color: #8d9985;
+        font: 8px DM Mono;
+      }
+      .proof {
+        margin-top: 18px;
+        border: 1px solid #465c34;
+        background: #c8ff5507;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        color: #8b9485;
+        font: 9px DM Mono;
+        letter-spacing: 0.06em;
+        text-align: center;
+      }
+      .proof strong {
+        color: var(--acid);
+        font-size: 17px;
+      }
+      .human-bridge {
+        display: grid;
+        grid-template-columns: 240px 1fr 240px;
+        align-items: center;
+        gap: 30px;
+      }
+      .human-card {
+        border: 1px solid #344032;
+        background: #111510;
+        padding: 26px;
+        text-align: center;
+      }
+      .human-card .portrait {
+        width: 76px;
+        height: 76px;
+      }
+      .human-card .portrait:before {
+        left: 27px;
+        top: 14px;
+      }
+      .human-card .portrait:after {
+        left: 19px;
+        bottom: 10px;
+      }
+      .human-card h3 {
+        margin: 18px 0 5px;
+      }
+      .human-card p {
+        color: #7c8578;
+        font: 10px DM Mono;
+      }
+      .bridge {
+        position: relative;
+        height: 250px;
+        display: grid;
+        place-items: center;
+      }
+      .bridge:before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          var(--cyan),
+          var(--acid),
+          var(--cyan)
+        );
+        box-shadow: 0 0 25px #c8ff5544;
+      }
+      .bridge-db {
+        width: 140px;
+        height: 100px;
+        border: 2px solid var(--acid);
+        border-radius: 50%/18%;
+        background: #142011;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        z-index: 2;
+        font: 10px DM Mono;
+        color: var(--acid);
+      }
+      .bridge-db small {
+        color: #7d8974;
+        margin-top: 6px;
+      }
+      .wisdom-tag {
+        position: absolute;
+        padding: 8px 11px;
+        border: 1px solid #405236;
+        background: #121711;
+        color: #a9b3a3;
+        font: 8px DM Mono;
+        animation: cross 5s linear infinite;
+      }
+      .w2 {
+        animation-delay: -1.7s;
+      }
+      .w3 {
+        animation-delay: -3.4s;
+      }
+      .principles {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 44px;
+      }
+      .principles article {
+        border-top: 1px solid #43513c;
+        padding: 18px 4px;
+      }
+      .principles b {
+        color: var(--acid);
+        font: 12px DM Mono;
+      }
+      .principles p {
+        margin-top: 10px;
+        color: #7f887b;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+      nav {
+        position: fixed;
+        right: 22px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: grid;
+        gap: 8px;
+        z-index: 30;
+      }
+      nav a {
+        width: 7px;
+        height: 7px;
+        border: 1px solid #687064;
+        border-radius: 50%;
+      }
+      nav a:hover {
+        background: var(--acid);
+        border-color: var(--acid);
+      }
+      @keyframes float {
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+      @keyframes flow {
+        to {
+          background-position: 400px 0;
+        }
+      }
+      @keyframes travel {
+        to {
+          offset-distance: 100%;
+        }
+      }
+      @keyframes cross {
+        from {
+          left: 0;
+          transform: translateX(-50%);
+        }
+        to {
+          left: 100%;
+          transform: translateX(-50%);
+        }
+      }
+      @media (max-width: 900px) {
+        .slide {
+          padding: 72px 26px;
+        }
+        .today-grid,
+        .network-wrap,
+        .human-bridge {
+          grid-template-columns: 1fr;
+        }
+        .today-grid .arrow {
+          height: 50px;
+          width: 1px;
+          margin: auto;
+        }
+        .today-grid .arrow:after {
+          bottom: 0;
+          top: auto;
+          right: -4px;
+          border-left-color: transparent;
+          border-top-color: #596255;
+        }
+        .network-wrap {
+          gap: 10px;
+        }
+        .human-stack {
+          display: flex;
+        }
+        .db-zone {
+          min-height: 380px;
+        }
+        .compare {
+          grid-template-columns: 1fr;
+        }
+        .vs {
+          min-height: 30px;
+        }
+        .human-bridge {
+          grid-template-columns: 1fr;
+        }
+        .bridge {
+          height: 170px;
+        }
+        .principles {
+          grid-template-columns: 1fr 1fr;
+        }
+        .diagram {
+          overflow: visible;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav aria-label="Slides">
+      <a href="#s1" aria-label="Slide 1"></a
+      ><a href="#s2" aria-label="Slide 2"></a
+      ><a href="#s3" aria-label="Slide 3"></a
+      ><a href="#s4" aria-label="Slide 4"></a
+      ><a href="#s5" aria-label="Slide 5"></a>
+    </nav>
+
+    <section class="slide" id="s1" data-slide="01 / 05">
+      <div class="brand"><i></i> AGENT HADERACH</div>
+      <div class="hint">SCROLL OR USE ARROW KEYS</div>
+      <div class="glow one"></div>
+      <div class="glow two"></div>
+      <p class="eyebrow">
+        The missing infrastructure for agentic software development
+      </p>
+      <h1>
+        Software ships.<br /><span class="accent">Experience disappears.</span>
+      </h1>
+      <p class="lead">
+        Coding agents discover how a system really works—but the next agent
+        still begins almost from zero.
+      </p>
+      <div class="hero-line">
+        <span></span> WE CONNECT DEVELOPERS THROUGH THE EXPERIENCE OF THEIR
+        AGENTS
+      </div>
+    </section>
+
+    <section class="slide" id="s2" data-slide="02 / 05">
+      <div class="brand"><i></i> TODAY</div>
+      <div class="glow one"></div>
+      <p class="eyebrow">Current software development</p>
+      <h2>
+        Agents do valuable research.<br />We mostly save the
+        <span class="strike">output</span>, not the learning.
+      </h2>
+      <div class="diagram today-grid">
+        <div class="person-agent">
+          <div class="person">
+            <div class="portrait"></div>
+            <span class="caption">DEVELOPER</span>
+          </div>
+          <div class="agent-shape"><b>A</b><small>CODING AGENT</small></div>
+        </div>
+        <div class="arrow"><label>DISCOVERS</label></div>
+        <div class="work">
+          <div class="artifact">
+            <i></i><b>Pull request</b><small>what changed</small>
+          </div>
+          <div class="artifact fade-doc">
+            <i></i><b>AGENTS.md</b><small>some instructions</small>
+          </div>
+          <div class="artifact fade-doc">
+            <i></i><b>Spec files</b><small>some decisions</small>
+          </div>
+        </div>
+        <div class="arrow"><label>PUSHES</label></div>
+        <div class="person-agent">
+          <div class="agent-shape"><b>B</b><small>NEW SESSION</small></div>
+          <div class="person">
+            <div class="portrait"></div>
+            <span class="caption">NEXT DEV</span>
+          </div>
+        </div>
+        <div class="loss">
+          THE INVESTIGATION, DEAD ENDS, AND PROVEN WORKFLOW ARE MOSTLY LOST
+        </div>
+      </div>
+      <div class="callout">
+        Git connects developers through code. Markdown preserves selected
+        instructions. Neither is infrastructure for the granular, evolving
+        experience produced by every agent session.
+      </div>
+    </section>
+
+    <section class="slide" id="s3" data-slide="03 / 05">
+      <div class="brand"><i></i> WITH HADERACH</div>
+      <div class="glow two"></div>
+      <p class="eyebrow">A shared experience layer, built for agents</p>
+      <h2>
+        Every agent can start where another agent
+        <span class="accent">finished learning.</span>
+      </h2>
+      <div class="diagram network-wrap">
+        <div class="human-stack">
+          <div class="portrait"></div>
+          <div class="agent-shape"><b>A</b><small>INVESTIGATES</small></div>
+          <div class="wisdom">
+            Human A guides the task<br />Agent A proves a workflow
+          </div>
+        </div>
+        <div class="db-zone">
+          <div class="verified">REPOSITORY-SCOPED · EVIDENCED · RANKED</div>
+          <div class="flowline left"></div>
+          <div class="flowline right"></div>
+          <div class="pulse"></div>
+          <div class="pulse out"></div>
+          <div class="entry e1">
+            <strong>WORKFLOW</strong>How to validate the change
+          </div>
+          <div class="entry e2">
+            <strong>LESSON</strong>Architectural constraint
+          </div>
+          <div class="entry e3">
+            <strong>PITFALL</strong>Failed approach + reason
+          </div>
+          <div class="entry e4">
+            <strong>ANSWER</strong>Evidence for a blocker
+          </div>
+          <div class="db">
+            <b>HADERACH</b><small>SHARED EXPERIENCE DATABASE</small>
+          </div>
+        </div>
+        <div class="human-stack">
+          <div class="portrait"></div>
+          <div class="agent-shape"><b>B</b><small>BUILDS ON IT</small></div>
+          <div class="wisdom">
+            Agent B retrieves selectively<br />Human B inherits the finding
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="s4" data-slide="04 / 05">
+      <div class="brand"><i></i> BEFORE / AFTER</div>
+      <p class="eyebrow">Not another giant context file</p>
+      <h2>
+        From scattered artifacts to
+        <span class="accent">living repository intelligence.</span>
+      </h2>
+      <div class="compare">
+        <article class="compare-panel">
+          <p class="eyebrow">Before</p>
+          <h3>Agents connected indirectly</h3>
+          <p>
+            Useful context is buried across code, PRs, chats, and increasingly
+            large Markdown files.
+          </p>
+          <div class="mini-flow">
+            <div>Agent A <span>→ PR</span></div>
+            <div>Agent B <span>→ rg everything again</span></div>
+            <div>Finding <span>→ forgotten</span></div>
+            <div>Bad approach <span>→ repeated</span></div>
+          </div>
+          <div class="chips">
+            <span>STATIC</span><span>COARSE</span><span>NO FEEDBACK</span>
+          </div>
+        </article>
+        <div class="vs">VS</div>
+        <article class="compare-panel after">
+          <p class="eyebrow">With Haderach</p>
+          <h3>Agents connected through experience</h3>
+          <p>
+            Granular findings are retrieved progressively, verified against
+            current code, and reinforced by outcomes.
+          </p>
+          <div class="mini-flow">
+            <div>Agent A <b>→ saves evidence</b></div>
+            <div>Agent B <b>→ gets best signal</b></div>
+            <div>Tests pass <b>→ reinforces</b></div>
+            <div>Stale advice <b>→ falls</b></div>
+          </div>
+          <div class="chips">
+            <span>TOKEN-BUDGETED</span><span>REVISION-AWARE</span
+            ><span>SELF-CORRECTING</span>
+          </div>
+        </article>
+      </div>
+      <div class="proof">
+        <span>ONE OBSERVED REAL-REPOSITORY TRANSFER</span
+        ><strong>45.6% FEWER NON-CACHED INPUT TOKENS</strong
+        ><span
+          >SAME CORRECT RUNTIME IMPLEMENTATION · ONE ADDITIONAL REGRESSION
+          TEST</span
+        >
+      </div>
+    </section>
+
+    <section class="slide" id="s5" data-slide="05 / 05">
+      <div class="brand"><i></i> THE HUMAN NETWORK</div>
+      <div class="glow one"></div>
+      <div class="glow two"></div>
+      <p class="eyebrow">The deeper idea</p>
+      <h2>
+        When agents share experience,<br /><span class="accent"
+          >developers share wisdom.</span
+        >
+      </h2>
+      <p class="lead">
+        Every developer brings different instincts, prompts, domain knowledge,
+        and ways of investigating. Their agent carries that perspective into the
+        work—and Haderach makes the useful result available to everyone else.
+      </p>
+      <div class="human-bridge">
+        <article class="human-card">
+          <div class="portrait"></div>
+          <h3>Developer A</h3>
+          <p>Domain expertise · unique approach · hard-won evidence</p>
+        </article>
+        <div class="bridge">
+          <div class="wisdom-tag">testing workflow</div>
+          <div class="wisdom-tag w2">failed approach</div>
+          <div class="wisdom-tag w3">architecture lesson</div>
+          <div class="bridge-db">HADERACH<small>AGENTS AS BRIDGES</small></div>
+        </div>
+        <article class="human-card">
+          <div class="portrait"></div>
+          <h3>Developer B</h3>
+          <p>
+            Different tools · fresh task · inherited repository intelligence
+          </p>
+        </article>
+      </div>
+      <div class="principles">
+        <article>
+          <b>01 · GRANULAR</b>
+          <p>Small reusable findings instead of monolithic context dumps.</p>
+        </article>
+        <article>
+          <b>02 · EVIDENCED</b>
+          <p>
+            Revision, tests, outcomes, and provenance travel with the claim.
+          </p>
+        </article>
+        <article>
+          <b>03 · COMPOUNDING</b>
+          <p>Successful reuse improves what the next agent receives.</p>
+        </article>
+        <article>
+          <b>04 · COLLABORATIVE</b>
+          <p>
+            Different developers' approaches become shared repository
+            intelligence.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <script>
+      const slides = [...document.querySelectorAll(".slide")];
+      addEventListener("keydown", (event) => {
+        if (
+          ![
+            "ArrowDown",
+            "ArrowRight",
+            "PageDown",
+            "ArrowUp",
+            "ArrowLeft",
+            "PageUp",
+          ].includes(event.key)
+        )
+          return;
+        event.preventDefault();
+        const current = slides.findIndex(
+          (slide) =>
+            Math.abs(slide.getBoundingClientRect().top) < innerHeight / 2,
+        );
+        const forward = ["ArrowDown", "ArrowRight", "PageDown"].includes(
+          event.key,
+        );
+        slides[
+          Math.max(0, Math.min(slides.length - 1, current + (forward ? 1 : -1)))
+        ].scrollIntoView({ behavior: "smooth" });
+      });
+    </script>
+  </body>
+</html>

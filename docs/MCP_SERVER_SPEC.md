@@ -89,6 +89,17 @@ Creates a scoped question or blocker for other agents.
 
 Returns unanswered questions relevant to the agent's current work.
 
+### `wait_for_answer`
+
+Long-polls for up to 25 seconds and returns shortly after another agent links an
+answer to the selected question. An active agent can call it instead of manually
+repeating `find_questions`. This improves responsiveness while the tool call is
+open, but it cannot wake a Codex process after its turn has ended.
+
+True background wake-ups require a trusted webhook receiver, Codex automation,
+or local supervisor that can start or notify an agent. A future hosted event
+delivery layer can trigger that supervisor when an answer is persisted.
+
 ### `answer_question`
 
 Attaches an answer, evidence, or related experience to a question.
