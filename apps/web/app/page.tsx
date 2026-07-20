@@ -211,6 +211,9 @@ export default function Dashboard() {
     (x) => x.confidence === "verified",
   ).length;
   const reuse = experiences.reduce((n, x) => n + x.successfulUses, 0);
+  const activeWorkspace = workspaces.find(
+    (workspace) => workspace.id === workspaceId && workspace.role,
+  );
 
   async function open(entry: Experience) {
     setSelected(entry);
@@ -433,6 +436,7 @@ export default function Dashboard() {
             className={view === "memory" ? "active" : ""}
             onClick={() => setView("memory")}
             aria-label="Experience memory"
+            disabled={!activeWorkspace}
           >
             ⌁<small>Memory</small>
           </button>
@@ -440,6 +444,7 @@ export default function Dashboard() {
             className={view === "signals" ? "active" : ""}
             onClick={() => setView("signals")}
             aria-label="Questions and incidents"
+            disabled={!activeWorkspace}
           >
             ◎<small>Signals</small>
           </button>
@@ -447,6 +452,7 @@ export default function Dashboard() {
             className={view === "access" ? "active" : ""}
             onClick={() => setView("access")}
             aria-label="Workspace access and MCP tokens"
+            disabled={!activeWorkspace}
           >
             ◈<small>Access</small>
           </button>
@@ -477,319 +483,340 @@ export default function Dashboard() {
               ))}
           </select>
         </header>
-        <form className="workspace-create" onSubmit={createWorkspace}>
-          <input
-            type="url"
-            required
-            value={repositoryUrl}
-            onChange={(event) => setRepositoryUrl(event.target.value)}
-            placeholder="https://github.com/owner/repository"
-            aria-label="Public GitHub repository URL"
-          />
-          <button type="submit">CREATE WORKSPACE</button>
-        </form>
-        {workspaces.some((workspace) => !workspace.role) && (
-          <div className="workspace-discovery">
-            <input
-              value={workspaceQuery}
-              onChange={(event) => setWorkspaceQuery(event.target.value)}
-              placeholder="Find a repository workspace…"
-              aria-label="Find a repository workspace"
-            />
-            {workspaces
-              .filter(
-                (workspace) =>
-                  !workspace.role &&
-                  workspace.canonical_key
-                    .toLowerCase()
-                    .includes(workspaceQuery.toLowerCase()),
-              )
-              .slice(0, 4)
-              .map((workspace) => (
-                <button
-                  key={workspace.id}
-                  onClick={() => requestAccess(workspace)}
-                  disabled={workspace.request_status === "pending"}
-                >
-                  {workspace.request_status === "pending"
-                    ? "Request pending for "
-                    : workspace.request_status === "rejected"
-                      ? `Rejected${workspace.request_reason ? `: ${workspace.request_reason}` : ""} · Request again for `
-                      : "Request access to "}
-                  {workspace.repository_owner}/{workspace.repository_name}
-                </button>
-              ))}
-          </div>
-        )}
-        <div className="metrics">
-          <article>
-            <label>EXPERIENCES</label>
-            <strong>{experiences.length}</strong>
-            <small>shared knowledge units</small>
-          </article>
-          <article>
-            <label>VERIFIED</label>
-            <strong>{verified}</strong>
-            <small>evidence-backed findings</small>
-          </article>
-          <article>
-            <label>SUCCESSFUL REUSE</label>
-            <strong>{reuse}</strong>
-            <small>investigations avoided</small>
-          </article>
-          <article className="signal">
-            <label>NETWORK</label>
-            <strong>{live ? "LIVE" : "OFFLINE"}</strong>
-            <small>{experiences.length} repository-scoped entries</small>
-          </article>
-        </div>
-        {view === "memory" && (
-          <div className="toolbar">
-            <div className="search">
-              <span>⌕</span>
+        {!activeWorkspace && (
+          <section className="workspace-empty-state">
+            <p className="eyebrow">WORKSPACE REQUIRED</p>
+            <h2>Choose where the shared intelligence lives.</h2>
+            <p>
+              Experiences, reuse metrics, agent activity, and access controls
+              belong to a repository workspace. Create one from a public GitHub
+              repository or request access to an existing workspace.
+            </p>
+            <form className="workspace-create" onSubmit={createWorkspace}>
               <input
-                aria-label="Search experiences"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search errors, paths, workflows, findings…"
+                type="url"
+                required
+                value={repositoryUrl}
+                onChange={(event) => setRepositoryUrl(event.target.value)}
+                placeholder="https://github.com/owner/repository"
+                aria-label="Public GitHub repository URL"
               />
-            </div>
-            <div className="filters">
-              <button
-                className={type === "all" ? "on" : ""}
-                onClick={() => setType("all")}
-              >
-                ALL
-              </button>
-              {types.map((t) => (
-                <button
-                  key={t}
-                  className={type === t ? "on" : ""}
-                  onClick={() => setType(t)}
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
+              <button type="submit">CREATE WORKSPACE</button>
+            </form>
+            {workspaces.some((workspace) => !workspace.role) && (
+              <div className="workspace-discovery">
+                <input
+                  value={workspaceQuery}
+                  onChange={(event) => setWorkspaceQuery(event.target.value)}
+                  placeholder="Find a repository workspace…"
+                  aria-label="Find a repository workspace"
+                />
+                {workspaces
+                  .filter(
+                    (workspace) =>
+                      !workspace.role &&
+                      workspace.canonical_key
+                        .toLowerCase()
+                        .includes(workspaceQuery.toLowerCase()),
+                  )
+                  .slice(0, 4)
+                  .map((workspace) => (
+                    <button
+                      key={workspace.id}
+                      onClick={() => requestAccess(workspace)}
+                      disabled={workspace.request_status === "pending"}
+                    >
+                      {workspace.request_status === "pending"
+                        ? "Request pending for "
+                        : workspace.request_status === "rejected"
+                          ? `Rejected${workspace.request_reason ? `: ${workspace.request_reason}` : ""} · Request again for `
+                          : "Request access to "}
+                      {workspace.repository_owner}/{workspace.repository_name}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </section>
         )}
-        {view === "memory" && (
-          <div className="grid">
-            <section className="feed">
-              <div className="section-title">
-                <span>RANKED EXPERIENCE</span>
-                <small>{filtered.length} RESULTS · BEST SIGNAL FIRST</small>
-              </div>
-              {filtered.map((x, i) => (
-                <button
-                  className="card"
-                  onClick={() => open(x)}
-                  key={x.id}
-                  style={{ animationDelay: `${i * 70}ms` }}
-                >
-                  <div className={`kind ${x.type}`}>{icons[x.type] ?? "·"}</div>
-                  <div className="card-body">
-                    <div>
-                      <span className="tag">{x.type}</span>
-                      <span className={`state ${x.confidence}`}>
-                        {x.confidence}
-                      </span>
-                    </div>
-                    <h3>{x.taskSummary}</h3>
-                    <p>{x.summary}</p>
-                    <div className="chips">
-                      {x.keywords.slice(0, 4).map((k) => (
-                        <span key={k}>{k}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="score">
-                    <svg viewBox="0 0 42 42">
-                      <circle cx="21" cy="21" r="17" />
-                      <circle
-                        className="fill"
-                        cx="21"
-                        cy="21"
-                        r="17"
-                        style={{
-                          strokeDashoffset: 107 - 107 * Number(x.rankingScore),
-                        }}
-                      />
-                    </svg>
-                    <b>{Math.round(Number(x.rankingScore) * 100)}</b>
-                    <small>RANK</small>
-                  </div>
-                </button>
-              ))}
-              {!filtered.length && (
-                <div className="empty">
-                  No shared experience matches this signal.
-                </div>
-              )}
-            </section>
-            <section className="activity">
-              <div className="section-title">
-                <span>AGENT ACTIVITY</span>
-                <i className={live ? "online" : ""} />
-              </div>
-              {experiences.slice(0, 6).map((entry) => (
-                <article key={entry.id}>
-                  <div className="agent">A</div>
-                  <div>
-                    <b>{entry.taskSummary}</b>
-                    <p>
-                      {entry.type} · {entry.revision.slice(0, 8)}
-                    </p>
-                  </div>
-                  <time>
-                    {new Date(entry.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </article>
-              ))}
-              {!experiences.length && (
-                <div className="empty small">
-                  Agent contributions appear as experiences are saved.
-                </div>
-              )}
-              <div className="flow">
-                <p>EXPERIENCE FLYWHEEL</p>
-                <div>
-                  <span>DISCOVER</span>
-                  <b>→</b>
-                  <span>APPLY</span>
-                  <b>→</b>
-                  <span>VERIFY</span>
-                  <b>→</b>
-                  <span>REINFORCE</span>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-        {view === "signals" && (
-          <section className="view-panel">
-            <div className="section-title">
-              <span>COLLABORATION SIGNALS</span>
-              <small>QUESTIONS · ANSWERS · INCIDENTS</small>
+        {activeWorkspace && (
+          <>
+            <div className="metrics">
+              <article>
+                <label>EXPERIENCES</label>
+                <strong>{experiences.length}</strong>
+                <small>shared knowledge units</small>
+              </article>
+              <article>
+                <label>VERIFIED</label>
+                <strong>{verified}</strong>
+                <small>evidence-backed findings</small>
+              </article>
+              <article>
+                <label>SUCCESSFUL REUSE</label>
+                <strong>{reuse}</strong>
+                <small>investigations avoided</small>
+              </article>
+              <article className="signal">
+                <label>NETWORK</label>
+                <strong>{live ? "LIVE" : "OFFLINE"}</strong>
+                <small>{experiences.length} repository-scoped entries</small>
+              </article>
             </div>
-            <div className="signal-grid">
-              {experiences
-                .filter((x) =>
-                  ["question", "answer", "incident"].includes(x.type),
-                )
-                .map((x, i) => (
+            {view === "memory" && (
+              <div className="toolbar">
+                <div className="search">
+                  <span>⌕</span>
+                  <input
+                    aria-label="Search experiences"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search errors, paths, workflows, findings…"
+                  />
+                </div>
+                <div className="filters">
                   <button
-                    className="signal-card"
-                    key={x.id}
-                    onClick={() => open(x)}
-                    style={{ animationDelay: `${i * 70}ms` }}
+                    className={type === "all" ? "on" : ""}
+                    onClick={() => setType("all")}
                   >
-                    <div className={`kind ${x.type}`}>{icons[x.type]}</div>
-                    <span className="tag">{x.type}</span>
-                    <h3>{x.taskSummary}</h3>
-                    <p>{x.summary}</p>
+                    ALL
                   </button>
-                ))}
-              {!experiences.some((x) =>
-                ["question", "answer", "incident"].includes(x.type),
-              ) && (
-                <div className="empty">
-                  No open questions or incidents. The repository network is
-                  quiet.
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-        {view === "access" && (
-          <section className="view-panel access-panel">
-            <div className="section-title">
-              <span>ACCESS REQUESTS</span>
-              <div>
-                <small>
-                  {
-                    accessRequests.filter(
-                      (request) => request.status === "pending",
-                    ).length
-                  }{" "}
-                  PENDING
-                </small>
-                <button className="sign-out" onClick={signOut}>
-                  SIGN OUT
-                </button>
-              </div>
-            </div>
-            {accessRequests.map((request) => (
-              <article className="access-row" key={request.id}>
-                <div>
-                  <b>@{request.username ?? request.display_name}</b>
-                  <p>
-                    {request.requested_role} · {request.message || "No message"}
-                  </p>
-                </div>
-                <span>{request.status}</span>
-                {request.status === "pending" && (
-                  <div>
+                  {types.map((t) => (
                     <button
-                      onClick={() => decideAccess(request.id, "approved")}
+                      key={t}
+                      className={type === t ? "on" : ""}
+                      onClick={() => setType(t)}
                     >
-                      APPROVE
+                      {t.toUpperCase()}
                     </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {view === "memory" && (
+              <div className="grid">
+                <section className="feed">
+                  <div className="section-title">
+                    <span>RANKED EXPERIENCE</span>
+                    <small>{filtered.length} RESULTS · BEST SIGNAL FIRST</small>
+                  </div>
+                  {filtered.map((x, i) => (
                     <button
-                      onClick={() => decideAccess(request.id, "rejected")}
+                      className="card"
+                      onClick={() => open(x)}
+                      key={x.id}
+                      style={{ animationDelay: `${i * 70}ms` }}
                     >
-                      REJECT
+                      <div className={`kind ${x.type}`}>
+                        {icons[x.type] ?? "·"}
+                      </div>
+                      <div className="card-body">
+                        <div>
+                          <span className="tag">{x.type}</span>
+                          <span className={`state ${x.confidence}`}>
+                            {x.confidence}
+                          </span>
+                        </div>
+                        <h3>{x.taskSummary}</h3>
+                        <p>{x.summary}</p>
+                        <div className="chips">
+                          {x.keywords.slice(0, 4).map((k) => (
+                            <span key={k}>{k}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="score">
+                        <svg viewBox="0 0 42 42">
+                          <circle cx="21" cy="21" r="17" />
+                          <circle
+                            className="fill"
+                            cx="21"
+                            cy="21"
+                            r="17"
+                            style={{
+                              strokeDashoffset:
+                                107 - 107 * Number(x.rankingScore),
+                            }}
+                          />
+                        </svg>
+                        <b>{Math.round(Number(x.rankingScore) * 100)}</b>
+                        <small>RANK</small>
+                      </div>
+                    </button>
+                  ))}
+                  {!filtered.length && (
+                    <div className="empty">
+                      No shared experience matches this signal.
+                    </div>
+                  )}
+                </section>
+                <section className="activity">
+                  <div className="section-title">
+                    <span>AGENT ACTIVITY</span>
+                    <i className={live ? "online" : ""} />
+                  </div>
+                  {experiences.slice(0, 6).map((entry) => (
+                    <article key={entry.id}>
+                      <div className="agent">A</div>
+                      <div>
+                        <b>{entry.taskSummary}</b>
+                        <p>
+                          {entry.type} · {entry.revision.slice(0, 8)}
+                        </p>
+                      </div>
+                      <time>
+                        {new Date(entry.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </article>
+                  ))}
+                  {!experiences.length && (
+                    <div className="empty small">
+                      Agent contributions appear as experiences are saved.
+                    </div>
+                  )}
+                  <div className="flow">
+                    <p>EXPERIENCE FLYWHEEL</p>
+                    <div>
+                      <span>DISCOVER</span>
+                      <b>→</b>
+                      <span>APPLY</span>
+                      <b>→</b>
+                      <span>VERIFY</span>
+                      <b>→</b>
+                      <span>REINFORCE</span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+            {view === "signals" && (
+              <section className="view-panel">
+                <div className="section-title">
+                  <span>COLLABORATION SIGNALS</span>
+                  <small>QUESTIONS · ANSWERS · INCIDENTS</small>
+                </div>
+                <div className="signal-grid">
+                  {experiences
+                    .filter((x) =>
+                      ["question", "answer", "incident"].includes(x.type),
+                    )
+                    .map((x, i) => (
+                      <button
+                        className="signal-card"
+                        key={x.id}
+                        onClick={() => open(x)}
+                        style={{ animationDelay: `${i * 70}ms` }}
+                      >
+                        <div className={`kind ${x.type}`}>{icons[x.type]}</div>
+                        <span className="tag">{x.type}</span>
+                        <h3>{x.taskSummary}</h3>
+                        <p>{x.summary}</p>
+                      </button>
+                    ))}
+                  {!experiences.some((x) =>
+                    ["question", "answer", "incident"].includes(x.type),
+                  ) && (
+                    <div className="empty">
+                      No open questions or incidents. The repository network is
+                      quiet.
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+            {view === "access" && (
+              <section className="view-panel access-panel">
+                <div className="section-title">
+                  <span>ACCESS REQUESTS</span>
+                  <div>
+                    <small>
+                      {
+                        accessRequests.filter(
+                          (request) => request.status === "pending",
+                        ).length
+                      }{" "}
+                      PENDING
+                    </small>
+                    <button className="sign-out" onClick={signOut}>
+                      SIGN OUT
                     </button>
                   </div>
-                )}
-              </article>
-            ))}
-            {!accessRequests.length && (
-              <div className="empty">
-                No access requests for this workspace.
-              </div>
-            )}
-            <div className="section-title token-title">
-              <span>MEMBERS</span>
-              <small>{members.length} ACTIVE</small>
-            </div>
-            {members.map((member) => (
-              <article className="access-row" key={member.id}>
-                <div>
-                  <b>@{member.username ?? member.display_name}</b>
-                  <p>{member.display_name}</p>
                 </div>
-                <span>{member.role}</span>
-              </article>
-            ))}
-            <div className="section-title token-title">
-              <span>MCP TOKENS</span>
-              <button onClick={createToken}>CREATE TOKEN</button>
-            </div>
-            {newToken && (
-              <div className="token-once">
-                <b>Copy this token now. It will not be shown again.</b>
-                <code>{newToken}</code>
-              </div>
-            )}
-            {tokens.map((token) => (
-              <article className="access-row" key={token.id}>
-                <div>
-                  <b>{token.name}</b>
-                  <p>
-                    {token.token_prefix}…{token.token_last_four}
-                  </p>
-                </div>
-                <span>{token.revoked_at ? "revoked" : "active"}</span>
-                {!token.revoked_at && (
-                  <button onClick={() => revokeToken(token.id)}>REVOKE</button>
+                {accessRequests.map((request) => (
+                  <article className="access-row" key={request.id}>
+                    <div>
+                      <b>@{request.username ?? request.display_name}</b>
+                      <p>
+                        {request.requested_role} ·{" "}
+                        {request.message || "No message"}
+                      </p>
+                    </div>
+                    <span>{request.status}</span>
+                    {request.status === "pending" && (
+                      <div>
+                        <button
+                          onClick={() => decideAccess(request.id, "approved")}
+                        >
+                          APPROVE
+                        </button>
+                        <button
+                          onClick={() => decideAccess(request.id, "rejected")}
+                        >
+                          REJECT
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+                {!accessRequests.length && (
+                  <div className="empty">
+                    No access requests for this workspace.
+                  </div>
                 )}
-              </article>
-            ))}
-          </section>
+                <div className="section-title token-title">
+                  <span>MEMBERS</span>
+                  <small>{members.length} ACTIVE</small>
+                </div>
+                {members.map((member) => (
+                  <article className="access-row" key={member.id}>
+                    <div>
+                      <b>@{member.username ?? member.display_name}</b>
+                      <p>{member.display_name}</p>
+                    </div>
+                    <span>{member.role}</span>
+                  </article>
+                ))}
+                <div className="section-title token-title">
+                  <span>MCP TOKENS</span>
+                  <button onClick={createToken}>CREATE TOKEN</button>
+                </div>
+                {newToken && (
+                  <div className="token-once">
+                    <b>Copy this token now. It will not be shown again.</b>
+                    <code>{newToken}</code>
+                  </div>
+                )}
+                {tokens.map((token) => (
+                  <article className="access-row" key={token.id}>
+                    <div>
+                      <b>{token.name}</b>
+                      <p>
+                        {token.token_prefix}…{token.token_last_four}
+                      </p>
+                    </div>
+                    <span>{token.revoked_at ? "revoked" : "active"}</span>
+                    {!token.revoked_at && (
+                      <button onClick={() => revokeToken(token.id)}>
+                        REVOKE
+                      </button>
+                    )}
+                  </article>
+                ))}
+              </section>
+            )}
+          </>
         )}
       </section>
       {selected && (

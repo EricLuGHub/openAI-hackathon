@@ -132,6 +132,10 @@ nav button small {
   box-shadow: 0 0 12px #c8ff5599;
   animation: pulse 2s infinite;
 }
+aside nav button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
 .shell {
   width: 100%;
   padding: 36px 42px 60px 120px;
@@ -683,6 +687,33 @@ label,
   display: flex;
   gap: 10px;
   margin: 0 0 18px;
+}
+.workspace-empty-state {
+  min-height: 480px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 78% 22%, #c8ff550d, transparent 28%),
+    linear-gradient(135deg, #171a16cc, #0f110fcc);
+  padding: clamp(34px, 7vw, 88px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.workspace-empty-state h2 {
+  max-width: 720px;
+  margin: 8px 0 12px;
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1.05;
+}
+.workspace-empty-state > p:not(.eyebrow) {
+  max-width: 690px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0 0 30px;
+}
+.workspace-empty-state .workspace-create {
+  width: min(850px, 100%);
+  margin-bottom: 16px;
 }
 .workspace-create input {
   flex: 1;
