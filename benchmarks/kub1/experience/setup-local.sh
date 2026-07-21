@@ -37,8 +37,8 @@ workspace_id="$(jq -r '.id' <<<"$workspace")"
 
 umask 077
 {
-  printf 'HADERACH_API_URL=%q\n' "$api_url"
-  printf 'AGENT_HADERACH_TOKEN=%q\n' "$token"
-  printf 'HADERACH_WORKSPACE_ID=%q\n' "$workspace_id"
+  printf 'export HADERACH_API_URL=%q\n' "$api_url"
+  printf 'export AGENT_HADERACH_TOKEN=%q\n' "$token"
+  printf 'export HADERACH_WORKSPACE_ID=%q\n' "$workspace_id"
 } >"$secret_file"
 printf 'Workspace: %s\nSecrets: %s (mode 600; outside repository)\n' "$workspace_id" "$secret_file"

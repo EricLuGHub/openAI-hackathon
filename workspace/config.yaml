@@ -1,8 +1,9 @@
 workspace: agent-haderach
-repository: acme/checkout
+repository: kubernetes/kubernetes
+repository_path: repos/kubernetes/main
 experience_service:
   transport: http
-  url: http://127.0.0.1:3001/mcp
+  url: https://cloud-production-dcc8.up.railway.app/mcp
 defaults:
   token_budget: 800
   result_limit: 5

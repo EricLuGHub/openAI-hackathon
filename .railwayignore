@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+dist
+coverage
+.agent-haderach-runtime
+*.tsbuildinfo
+.DS_Store
+
+# Evaluation checkouts are local fixtures and make deployment uploads enormous.
+benchmarks/kub1/cache
+benchmarks/kub1/work
+benchmarks/kub1/trials

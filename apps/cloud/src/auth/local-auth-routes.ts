@@ -20,10 +20,10 @@ export function createLocalAuthRoutes(auth: LocalAuthService) {
   const routes = new Hono();
 
   routes.post("/signup", async (c) => {
-    const input = credentialsSchema
-      .extend({ username: z.string(), email: z.string() })
-      .parse(await c.req.json());
     try {
+      const input = credentialsSchema
+        .extend({ username: z.string(), email: z.string() })
+        .parse(await c.req.json());
       const session = await auth.signup(input);
       setCookie(c, "haderach_session", session, cookieOptions);
       return c.json({ authenticated: true }, 201);
@@ -33,21 +33,36 @@ export function createLocalAuthRoutes(auth: LocalAuthService) {
           { error: "Username or email is already registered" },
           409,
         );
+      if (error instanceof z.ZodError)
+        return c.json(
+          { error: error.issues[0]?.message ?? "Invalid signup details" },
+          400,
+        );
+      if (error instanceof SyntaxError)
+        return c.json({ error: "Request body must be valid JSON" }, 400);
+      if (error instanceof Error) return c.json({ error: error.message }, 400);
       throw error;
     }
   });
 
   routes.post("/signin", async (c) => {
-    const input = credentialsSchema
-      .extend({ identifier: z.string().min(1).max(320) })
-      .parse(await c.req.json());
     try {
+      const input = credentialsSchema
+        .extend({ identifier: z.string().min(1).max(320) })
+        .parse(await c.req.json());
       const session = await auth.signin(input.identifier, input.password);
       setCookie(c, "haderach_session", session, cookieOptions);
       return c.json({ authenticated: true });
     } catch (error) {
       if (error instanceof AuthenticationError)
         return c.json({ error: "Invalid username/email or password" }, 401);
+      if (error instanceof z.ZodError)
+        return c.json(
+          { error: error.issues[0]?.message ?? "Invalid sign-in details" },
+          400,
+        );
+      if (error instanceof SyntaxError)
+        return c.json({ error: "Request body must be valid JSON" }, 400);
       throw error;
     }
   });
