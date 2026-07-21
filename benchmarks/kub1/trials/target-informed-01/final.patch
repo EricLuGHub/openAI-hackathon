@@ -1,0 +1,104 @@
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
+index cdd957f4..8c6ffde8 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
+@@ -6051,6 +6051,39 @@ func TestAllocator(t *testing.T,
+ 
+ 			expectResults: nil,
+ 		},
++		"list-attributes-match-constraint-with-backtracking": {
++			features: Features{
++				ListTypeAttributes: true,
++			},
++			claimsToAllocate: objects(claimWithRequests(
++				claim0,
++				[]resourceapi.DeviceConstraint{{MatchAttribute: &stringAttribute}},
++				request(req0, classA, 3)),
++			),
++			classes: objects(class(classA, driverA)),
++			slices: unwrapResourceSlices(sliceWithDevices(slice1, node1, pool1, driverA,
++				device(device1, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value1", "value2"}},
++				}),
++				device(device2, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value1"}},
++				}),
++				device(device3, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value2"}},
++				}),
++				device(device4, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value2"}},
++				}),
++			)),
++			node: node(node1, region1),
++
++			expectResults: []any{allocationResult(
++				localNodeSelector(node1),
++				deviceAllocationResult(req0, driverA, pool1, device1, false),
++				deviceAllocationResult(req0, driverA, pool1, device3, false),
++				deviceAllocationResult(req0, driverA, pool1, device4, false),
++			)},
++		},
+ 		"list-attributes-match-constaint-list-of-string-values-without-common-elements": {
+ 			features: Features{
+ 				ListTypeAttributes: true,
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
+index d3d25718..9ee91aec 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
+@@ -894,8 +894,9 @@ type matchAttributeConstraint struct {
+ 	// For scalar values (existing behavior)
+ 	attribute *resourceapi.DeviceAttribute
+ 
+-	// For list values (when DRAListTypeAttributes feature gate is enabled)
+-	intersection *deviceAttributeListAsSet
++	// Backtracking removes devices in LIFO order, so retain the intersection
++	// for each depth of the search.
++	intersections []*deviceAttributeListAsSet
+ 
+ 	numDevices int
+ }
+@@ -919,11 +920,12 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 		// Initialize either scalar attribute or list set based on the attribute type.
+ 		if m.features.ListTypeAttributes {
+ 			// Convert attribute to set representation (both scalar and list)
+-			m.intersection = attributeAsSet(attribute)
+-			if m.intersection == nil {
++			intersection := attributeAsSet(attribute)
++			if intersection == nil {
+ 				m.logger.V(7).Info("Attribute type unknown")
+ 				return false
+ 			}
++			m.intersections = append(m.intersections, intersection)
+ 		} else {
+ 			// Scalar attribute: use existing behavior
+ 			m.attribute = attribute
+@@ -941,12 +943,15 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 			m.logger.V(7).Info("Unknown attribute type")
+ 			return false
+ 		}
+-		if !m.intersection.hasIntersection(newSet) {
++		intersection := m.intersections[len(m.intersections)-1]
++		if !intersection.hasIntersection(newSet) {
+ 			m.logger.V(7).Info("Attribute values have no common elements")
+ 			return false
+ 		}
+-		// Update to intersection
+-		m.intersection.updateToIntersection(newSet)
++		// Preserve the prior intersection for a matching remove during backtracking.
++		nextIntersection := *intersection
++		nextIntersection.updateToIntersection(newSet)
++		m.intersections = append(m.intersections, &nextIntersection)
+ 	} else {
+ 		// Scalar matching: use existing behavior
+ 		switch {
+@@ -992,6 +997,9 @@ func (m *matchAttributeConstraint) remove(requestName, subRequestName string, de
+ 	}
+ 
+ 	m.numDevices--
++	if m.features.ListTypeAttributes {
++		m.intersections = m.intersections[:len(m.intersections)-1]
++	}
+ 	m.logger.V(7).Info("Device removed from constraint set", "device", deviceID, "numDevices", m.numDevices)
+ }
+ 

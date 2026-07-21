@@ -1,0 +1,289 @@
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
+index cdd957f4..c1d86270 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
+@@ -6051,6 +6051,39 @@ func TestAllocator(t *testing.T,
+ 
+ 			expectResults: nil,
+ 		},
++		"list-attributes-match-constraint-backtracking-restores-intersection": {
++			features: Features{
++				ListTypeAttributes: true,
++			},
++			claimsToAllocate: objects(claimWithRequests(
++				claim0,
++				[]resourceapi.DeviceConstraint{{MatchAttribute: &stringAttribute}},
++				request(req0, classA, 3)),
++			),
++			classes: objects(class(classA, driverA)),
++			slices: unwrapResourceSlices(sliceWithDevices(slice1, node1, pool1, driverA,
++				device(device1, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"a", "b"}},
++				}),
++				device(device2, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"a"}},
++				}),
++				device(device3, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"b"}},
++				}),
++				device(device4, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"b"}},
++				}),
++			)),
++			node: node(node1, region1),
++
++			expectResults: []any{allocationResult(
++				localNodeSelector(node1),
++				deviceAllocationResult(req0, driverA, pool1, device1, false),
++				deviceAllocationResult(req0, driverA, pool1, device3, false),
++				deviceAllocationResult(req0, driverA, pool1, device4, false),
++			)},
++		},
+ 		"list-attributes-match-constaint-list-of-string-values-without-common-elements": {
+ 			features: Features{
+ 				ListTypeAttributes: true,
+@@ -6372,6 +6405,32 @@ func TestAllocator(t *testing.T,
+ 
+ 			expectResults: nil,
+ 		},
++		"list-attributes-distinct-constraint-tracks-all-devices-in-request": {
++			features: Features{
++				ListTypeAttributes: true,
++				ConsumableCapacity: true,
++			},
++			claimsToAllocate: objects(claimWithRequests(
++				claim0,
++				[]resourceapi.DeviceConstraint{{DistinctAttribute: &stringAttribute}},
++				request(req0, classA, 3)),
++			),
++			classes: objects(class(classA, driverA)),
++			slices: unwrapResourceSlices(sliceWithDevices(slice1, node1, pool1, driverA,
++				device(device1, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"a"}},
++				}),
++				device(device2, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"b"}},
++				}),
++				device(device3, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"a"}},
++				}),
++			)),
++			node: node(node1, region1),
++
++			expectResults: nil,
++		},
+ 		"list-attributes-distinct-constraint-mixed-scalar-and-list-all-distinct": {
+ 			features: Features{
+ 				ListTypeAttributes: true,
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
+index d3d25718..7fefe032 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
+@@ -308,7 +308,6 @@ func (a *Allocator) Allocate(ctx context.Context, node *v1.Node, claims []*resou
+ 					requestNames:  sets.New(constraint.Requests...),
+ 					attributeName: distinctAttribute,
+ 					features:      a.features,
+-					attributes:    make(map[string]resourceapi.DeviceAttribute),
+ 				}
+ 				constraints[i] = m
+ 			default:
+@@ -883,8 +882,6 @@ func attributeAsSet(attribute *resourceapi.DeviceAttribute) *deviceAttributeList
+ // empty, any device that has the attribute can be added. After that,
+ // only matching devices can be added.
+ //
+-// We don't need to track *which* devices are part of the set, only
+-// how many.
+ type matchAttributeConstraint struct {
+ 	logger        klog.Logger // Includes name and attribute name, so no need to repeat in log messages.
+ 	requestNames  sets.Set[string]
+@@ -897,7 +894,7 @@ type matchAttributeConstraint struct {
+ 	// For list values (when DRAListTypeAttributes feature gate is enabled)
+ 	intersection *deviceAttributeListAsSet
+ 
+-	numDevices int
++	allocations []constraintAllocation
+ }
+ 
+ func (m *matchAttributeConstraint) add(requestName, subRequestName string, device *draapi.Device, deviceID DeviceID) bool {
+@@ -914,7 +911,7 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 		return false
+ 	}
+ 
+-	if m.numDevices == 0 {
++	if len(m.allocations) == 0 {
+ 		// The first device can always get picked.
+ 		// Initialize either scalar attribute or list set based on the attribute type.
+ 		if m.features.ListTypeAttributes {
+@@ -928,7 +925,7 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 			// Scalar attribute: use existing behavior
+ 			m.attribute = attribute
+ 		}
+-		m.numDevices = 1
++		m.allocations = append(m.allocations, newConstraintAllocation(requestName, subRequestName, deviceID, *attribute))
+ 		m.logger.V(7).Info("First in set")
+ 		return true
+ 	}
+@@ -980,8 +977,8 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 		}
+ 	}
+ 
+-	m.numDevices++
+-	m.logger.V(7).Info("Constraint satisfied by device", "device", deviceID, "numDevices", m.numDevices)
++	m.allocations = append(m.allocations, newConstraintAllocation(requestName, subRequestName, deviceID, *attribute))
++	m.logger.V(7).Info("Constraint satisfied by device", "device", deviceID, "numDevices", len(m.allocations))
+ 	return true
+ }
+ 
+@@ -991,8 +988,28 @@ func (m *matchAttributeConstraint) remove(requestName, subRequestName string, de
+ 		return
+ 	}
+ 
+-	m.numDevices--
+-	m.logger.V(7).Info("Device removed from constraint set", "device", deviceID, "numDevices", m.numDevices)
++	m.allocations = removeConstraintAllocation(m.allocations, requestName, subRequestName, deviceID)
++	m.recomputeAttributeState()
++	m.logger.V(7).Info("Device removed from constraint set", "device", deviceID, "numDevices", len(m.allocations))
++}
++
++func (m *matchAttributeConstraint) recomputeAttributeState() {
++	m.attribute = nil
++	m.intersection = nil
++	if len(m.allocations) == 0 {
++		return
++	}
++
++	if !m.features.ListTypeAttributes {
++		attribute := m.allocations[0].attribute
++		m.attribute = &attribute
++		return
++	}
++
++	m.intersection = attributeAsSet(&m.allocations[0].attribute)
++	for i := 1; i < len(m.allocations); i++ {
++		m.intersection.updateToIntersection(attributeAsSet(&m.allocations[i].attribute))
++	}
+ }
+ 
+ func (m *matchAttributeConstraint) matches(requestName, subRequestName string) bool {
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/constraint.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/constraint.go
+index 307584ef..24cae2bf 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/constraint.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/constraint.go
+@@ -26,20 +26,17 @@ import (
+ )
+ 
+ // distinctAttributeConstraint compares an attribute value across devices.
+-// All devices must share the same value. When the set of devices is
++// All devices must have disjoint values. When the set of devices is
+ // empty, any device that has the attribute can be added. After that,
+-// only matching devices can be added.
++// only devices with no overlapping values can be added.
+ //
+-// We don't need to track *which* devices are part of the set, only
+-// how many.
+ type distinctAttributeConstraint struct {
+ 	logger        klog.Logger // Includes name and attribute name, so no need to repeat in log messages.
+ 	requestNames  sets.Set[string]
+ 	attributeName resourceapi.FullyQualifiedName
+ 	features      Features
+ 
+-	attributes map[string]resourceapi.DeviceAttribute
+-	numDevices int
++	allocations []constraintAllocation
+ }
+ 
+ func (m *distinctAttributeConstraint) add(requestName, subRequestName string, device *draapi.Device, deviceID DeviceID) bool {
+@@ -55,10 +52,9 @@ func (m *distinctAttributeConstraint) add(requestName, subRequestName string, de
+ 		return false
+ 	}
+ 
+-	if m.numDevices == 0 {
++	if len(m.allocations) == 0 {
+ 		// The first device can always get picked.
+-		m.attributes[requestName] = *attribute
+-		m.numDevices = 1
++		m.allocations = append(m.allocations, newConstraintAllocation(requestName, subRequestName, deviceID, *attribute))
+ 		m.logger.V(7).Info("First attribute added")
+ 		return true
+ 	}
+@@ -67,9 +63,8 @@ func (m *distinctAttributeConstraint) add(requestName, subRequestName string, de
+ 		m.logger.V(7).Info("Constraint not satisfied, has some duplicated attributes")
+ 		return false
+ 	}
+-	m.attributes[requestName] = *attribute
+-	m.numDevices++
+-	m.logger.V(7).Info("Constraint satisfied by device", "device", deviceID, "numDevices", m.numDevices)
++	m.allocations = append(m.allocations, newConstraintAllocation(requestName, subRequestName, deviceID, *attribute))
++	m.logger.V(7).Info("Constraint satisfied by device", "device", deviceID, "numDevices", len(m.allocations))
+ 	return true
+ 
+ }
+@@ -79,9 +74,8 @@ func (m *distinctAttributeConstraint) remove(requestName, subRequestName string,
+ 		// Device not affected by constraint.
+ 		return
+ 	}
+-	delete(m.attributes, requestName)
+-	m.numDevices--
+-	m.logger.V(7).Info("Device removed from constraint set", "device", deviceID, "numDevices", m.numDevices)
++	m.allocations = removeConstraintAllocation(m.allocations, requestName, subRequestName, deviceID)
++	m.logger.V(7).Info("Device removed from constraint set", "device", deviceID, "numDevices", len(m.allocations))
+ }
+ 
+ func (m *distinctAttributeConstraint) matches(requestName, subRequestName string) bool {
+@@ -105,8 +99,8 @@ func (m *distinctAttributeConstraint) matchesAttribute(attribute resourceapi.Dev
+ 		}
+ 
+ 		// Check that the new device is disjoint from each existing device
+-		for _, attr := range m.attributes {
+-			existingSet := attributeAsSet(&attr)
++		for i := range m.allocations {
++			existingSet := attributeAsSet(&m.allocations[i].attribute)
+ 			if existingSet == nil {
+ 				continue
+ 			}
+@@ -125,7 +119,8 @@ func (m *distinctAttributeConstraint) matchesAttribute(attribute resourceapi.Dev
+ 	}
+ 
+ 	// Scalar comparison (existing behavior)
+-	for _, attr := range m.attributes {
++	for _, allocation := range m.allocations {
++		attr := allocation.attribute
+ 		switch {
+ 		case attribute.StringValue != nil:
+ 			if attr.StringValue != nil && *attribute.StringValue == *attr.StringValue {
+@@ -161,3 +156,35 @@ func (m *distinctAttributeConstraint) matchesAttribute(attribute resourceapi.Dev
+ 	// All distinct
+ 	return true
+ }
++
++// constraintAllocation records enough information to undo an individual
++// constraint update, including when several devices belong to one request.
++type constraintAllocation struct {
++	requestName    string
++	subRequestName string
++	deviceID       DeviceID
++	attribute      resourceapi.DeviceAttribute
++}
++
++func newConstraintAllocation(requestName, subRequestName string, deviceID DeviceID, attribute resourceapi.DeviceAttribute) constraintAllocation {
++	return constraintAllocation{
++		requestName:    requestName,
++		subRequestName: subRequestName,
++		deviceID:       deviceID,
++		attribute:      attribute,
++	}
++}
++
++func removeConstraintAllocation(allocations []constraintAllocation, requestName, subRequestName string, deviceID DeviceID) []constraintAllocation {
++	for i := len(allocations) - 1; i >= 0; i-- {
++		allocation := allocations[i]
++		if allocation.requestName != requestName || allocation.subRequestName != subRequestName || allocation.deviceID != deviceID {
++			continue
++		}
++
++		copy(allocations[i:], allocations[i+1:])
++		return allocations[:len(allocations)-1]
++	}
++
++	return allocations
++}

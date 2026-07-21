@@ -1,0 +1,4 @@
+{
+  "status": "not_evaluated",
+  "note": "Solver stopped; run evaluate_trial.py in a fresh evaluator checkout."
+}

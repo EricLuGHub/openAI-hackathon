@@ -1,0 +1,8 @@
+{
+  "focused_command": "go test ./staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/...",
+  "broader_command": "go test ./staging/src/k8s.io/dynamic-resource-allocation/structured/...",
+  "command_timeout_seconds": 1800,
+  "hidden_tests_patch": "patches/hidden-tests.patch",
+  "reference_patch": "patches/historical-fix-reference.patch",
+  "docker_image": "golang:1.26.4-bookworm"
+}

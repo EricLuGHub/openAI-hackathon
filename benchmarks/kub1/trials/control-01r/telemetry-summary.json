@@ -1,0 +1,13 @@
+{
+  "command_count": 0,
+  "event_count": 5,
+  "event_types": {
+    "error": 1,
+    "item.completed": 1,
+    "thread.started": 1,
+    "turn.failed": 1,
+    "turn.started": 1
+  },
+  "malformed_event_lines": 0,
+  "reported_token_fields": {}
+}

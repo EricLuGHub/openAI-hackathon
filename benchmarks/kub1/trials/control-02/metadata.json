@@ -1,0 +1,33 @@
+{
+  "base_prompt_sha256": "14b8f8eaeb237e3cc0ad3d93633f017fcdfb1bf1e1070170c05e254186f91cba",
+  "codex_exit_code": 0,
+  "codex_version": "codex-cli 0.144.6",
+  "condition": "control",
+  "ended_at": "2026-07-21T07:45:41.728120+00:00",
+  "experiment_version": "kub1-v2",
+  "final_patch_sha256": "bbdb33791c75a83e7b1e19eb37df42c36158e07e646a442660a0b588d35af7b2",
+  "limits": {
+    "approval_policy": "never",
+    "codex_ephemeral": true,
+    "conditions": [
+      "control",
+      "assisted"
+    ],
+    "experiment_version": "kub1-v2",
+    "minimum_trials_per_condition": 3,
+    "model": null,
+    "model_policy": "ChatGPT Codex account default; identical for both conditions",
+    "reasoning_effort": "high",
+    "sandbox": "workspace-write",
+    "wall_time_seconds": 3600,
+    "web_search": false
+  },
+  "run_id": "02",
+  "snapshot_path": "/Users/ericlu/Works/openAI-hackathon/benchmarks/kub1/cache/kub1-v1-sanitized.tar.gz",
+  "snapshot_sha256": "9a16d746e138464c212025cb274910122be685140ac70646e900d40550cfd9bd",
+  "started_at": "2026-07-21T07:41:19.357818+00:00",
+  "status": "completed",
+  "submitted_prompt_sha256": "14b8f8eaeb237e3cc0ad3d93633f017fcdfb1bf1e1070170c05e254186f91cba",
+  "timed_out": false,
+  "wall_time_seconds": 262.324
+}

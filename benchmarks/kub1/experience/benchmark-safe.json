@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "corpus": "kub1-v1-benchmark-safe",
+  "repository": "kubernetes/kubernetes",
+  "exclusions": [
+    "Kubernetes PR #140325 and its fix",
+    "Kubernetes PR #140431 and all rollback/state-restoration guidance",
+    "Any description of the KUB1 hidden tests or target device arrangement"
+  ],
+  "entries": [
+    {
+      "key": "pr137190-allocator-map",
+      "type": "workflow",
+      "sourcePr": 137190,
+      "taskSummary": "[kub1-id:pr137190-allocator-map] Locate DRA constraint implementation and shared allocator tests",
+      "content": {
+        "summary": "Structured DRA constraint behavior is implemented under structured/internal, while cross-implementation behavior belongs in the shared allocatortesting table. Start with the shared case, then inspect the stable, incubating, and experimental adapters selected by feature support.",
+        "detail": "PR #137190 changed list-aware constraint behavior and placed shared scenarios in structured/internal/allocatortesting/allocator_testing.go. Its implementation work touched the allocator variants under structured/internal/{stable,incubating,experimental}. This is a navigation and testing workflow, not guidance for any later allocation bug.",
+        "steps": [
+          "Search structured/internal/allocatortesting/allocator_testing.go for the closest behavioral case.",
+          "Trace that case into the variant selected by its feature set.",
+          "When behavior is meant to agree across variants, prefer one shared table case over three copied tests."
+        ]
+      },
+      "scope": {
+        "paths": [
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/stable",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/incubating",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental"
+        ],
+        "services": ["dynamic-resource-allocation", "structured-allocator"],
+        "tools": ["go test"],
+        "errorSignatures": []
+      },
+      "retrieval": {
+        "keywords": ["DRA", "structured allocator", "allocatortesting", "stable", "incubating", "experimental"],
+        "relatedTerms": ["DeviceConstraint", "ResourceClaim", "table test"],
+        "aliases": ["dynamic resource allocation", "shared allocator harness"]
+      },
+      "outcomeStatus": "successful",
+      "tests": ["shared allocator table tests"],
+      "revision": "627ac57e367931ba2ce61324ed16798c82b5c737",
+      "confidence": "verified"
+    },
+    {
+      "key": "pr137190-list-set-semantics",
+      "type": "lesson",
+      "sourcePr": 137190,
+      "taskSummary": "[kub1-id:pr137190-list-set-semantics] Model DRA list attributes as sets in device constraints",
+      "content": {
+        "summary": "With DRAListTypeAttributes enabled, scalar attributes behave as singleton sets: matchAttribute requires a non-empty common intersection and distinctAttribute requires pairwise-disjoint values. Tests should cover scalar/list mixtures, order, duplicates, empty intersections, and overlap.",
+        "detail": "PR #137190 introduced list-valued DeviceAttribute fields and explicitly defined set semantics. The feature is gated by DRAListTypeAttributes; ConsumableCapacity also matters for distinctAttribute. Keep gate-dependent expectations explicit in allocator test Features instead of assuming every variant exposes the same API surface.",
+        "steps": [
+          "Identify whether DRAListTypeAttributes and ConsumableCapacity are enabled for the case.",
+          "Express expectations in terms of set intersection or pairwise disjointness.",
+          "Include mixed scalar/list inputs because scalars are singleton sets."
+        ]
+      },
+      "scope": {
+        "paths": [
+          "pkg/features/kube_features.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/constraint.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go"
+        ],
+        "services": ["dynamic-resource-allocation"],
+        "tools": ["go test"],
+        "errorSignatures": []
+      },
+      "retrieval": {
+        "keywords": ["DRAListTypeAttributes", "matchAttribute", "distinctAttribute", "intersection", "pairwise disjoint"],
+        "relatedTerms": ["list attribute", "set semantics", "singleton"],
+        "aliases": ["list types", "device attributes"]
+      },
+      "outcomeStatus": "successful",
+      "tests": ["list-attribute shared allocator cases"],
+      "revision": "627ac57e367931ba2ce61324ed16798c82b5c737",
+      "confidence": "verified"
+    },
+    {
+      "key": "pr135022-compare-values",
+      "type": "pitfall",
+      "sourcePr": 135022,
+      "taskSummary": "[kub1-id:pr135022-compare-values] Compare DRA attribute values rather than Go pointer identity",
+      "content": {
+        "summary": "DeviceAttribute scalar fields are pointers, but constraint equality is value equality. Comparing pointer addresses can accept duplicate bool, int, string, or version values as distinct; dereference matching non-nil fields and test externally visible allocations.",
+        "detail": "PR #135022 corrected distinctAttributeConstraint.matchesAttribute in the experimental allocator. The bug survived because independently allocated pointers with equal contents are unequal as addresses. The regression was expressed through the shared allocator table for bool, integer, version, missing, unsupported, and prioritized-subrequest behavior.",
+        "steps": [
+          "Determine the active DeviceAttribute value kind.",
+          "Compare dereferenced values only when both values of that kind are non-nil.",
+          "Use allocation results to test the constraint rather than asserting private representation."
+        ]
+      },
+      "scope": {
+        "paths": [
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/constraint.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go"
+        ],
+        "services": ["dynamic-resource-allocation", "structured-allocator"],
+        "tools": ["go test"],
+        "errorSignatures": []
+      },
+      "retrieval": {
+        "keywords": ["distinctAttributeConstraint", "pointer identity", "value equality", "DeviceAttribute"],
+        "relatedTerms": ["duplicate values", "constraint comparison", "prioritized subrequest"],
+        "aliases": ["distinct attribute", "pointer comparison"]
+      },
+      "outcomeStatus": "successful",
+      "tests": ["with-distinct-constraints", "with-distinct-constraints-attribute-not-set", "with-distinct-constraints-with-subrequests"],
+      "revision": "c99145805f12398c63e4f1304df8c7aaae327c12",
+      "confidence": "verified"
+    },
+    {
+      "key": "pr138885-complete-candidates",
+      "type": "lesson",
+      "sourcePr": 138885,
+      "taskSummary": "[kub1-id:pr138885-complete-candidates] Preserve source context on precomputed AllocationMode All candidates",
+      "content": {
+        "summary": "A precomputed AllocationMode: All device candidate must carry the same source context later validation consumes. PR #138885 showed that omitting the source pool left checkAvailableCounters without required context and caused a scheduler nil-pointer panic.",
+        "detail": "The AllocationModeAll path constructs device candidates before shared-counter validation. PR #138885 populated the candidate's pool in stable, incubating, and experimental variants and added a shared regression case with PartitionableDevices enabled. General review lesson: audit all constructor paths whenever a downstream method relies on candidate metadata.",
+        "steps": [
+          "List every path that constructs the candidate type.",
+          "Trace fields read by later selector, capacity, counter, and result-building stages.",
+          "Add a behavioral case that forces the downstream consumer to read the previously omitted field."
+        ]
+      },
+      "scope": {
+        "paths": [
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/stable/allocator_stable.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/incubating/allocator_incubating.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go",
+          "staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go"
+        ],
+        "services": ["dynamic-resource-allocation", "kube-scheduler"],
+        "tools": ["go test"],
+        "errorSignatures": ["nil pointer", "checkAvailableCounters"]
+      },
+      "retrieval": {
+        "keywords": ["AllocationModeAll", "device candidate", "resource pool", "consumed counters", "PartitionableDevices"],
+        "relatedTerms": ["candidate metadata", "checkAvailableCounters", "shared counters"],
+        "aliases": ["allocationMode All", "precomputed devices"]
+      },
+      "outcomeStatus": "successful",
+      "tests": ["all-devices-with-consumed-counters"],
+      "revision": "e8d0a0f24b6805c8613f0914eea63c4f6c6abf87",
+      "confidence": "verified"
+    },
+    {
+      "key": "pr138885-variant-parity",
+      "type": "workflow",
+      "sourcePr": 138885,
+      "taskSummary": "[kub1-id:pr138885-variant-parity] Audit stable incubating and experimental DRA variants together",
+      "content": {
+        "summary": "Structured allocator fixes can require equivalent edits in stable, incubating, and experimental variants. Use the shared allocatortesting case to define behavior once, then verify the case actually runs for every applicable feature combination.",
+        "detail": "PR #138885 applied the same missing pool assignment to three allocator variants. This reinforces, without duplicating, the shared-harness workflow learned from PR #137190: search sibling variants for structurally equivalent constructors and keep behavioral regression coverage centralized.",
+        "steps": [
+          "Search sibling allocator variant files for the same constructor or control-flow branch.",
+          "Classify differences as intentional feature/API differences or accidental drift.",
+          "Run the shared table case through all applicable variant test entry points."
+        ]
+      },
+      "scope": {
+        "paths": ["staging/src/k8s.io/dynamic-resource-allocation/structured/internal"],
+        "services": ["dynamic-resource-allocation", "structured-allocator"],
+        "tools": ["rg", "go test"],
+        "errorSignatures": []
+      },
+      "retrieval": {
+        "keywords": ["variant parity", "stable", "incubating", "experimental", "allocatortesting"],
+        "relatedTerms": ["implementation drift", "shared regression test"],
+        "aliases": ["three variants", "allocator variants"]
+      },
+      "outcomeStatus": "successful",
+      "tests": ["all-devices-with-consumed-counters"],
+      "revision": "e8d0a0f24b6805c8613f0914eea63c4f6c6abf87",
+      "confidence": "verified"
+    }
+  ]
+}

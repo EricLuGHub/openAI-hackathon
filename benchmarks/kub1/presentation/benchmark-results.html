@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haderach · Kubernetes benchmark</title>
+  <style>
+    :root { --ink:#f3f5ee; --muted:#92998e; --acid:#c8ff55; --cyan:#54dff8; --line:#30382e; --panel:#121610; }
+    * { box-sizing:border-box; }
+    html { background:#090b09; color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+    body { margin:0; min-width:300px; background:radial-gradient(circle at 78% 16%,#27331c66,transparent 30%),radial-gradient(circle at 12% 74%,#102e2d55,transparent 25%),#090b09; }
+    body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity:.18; background-image:linear-gradient(#32402c 1px,transparent 1px),linear-gradient(90deg,#32402c 1px,transparent 1px); background-size:48px 48px; mask-image:linear-gradient(to bottom,transparent,#000 15%,#000 85%,transparent); }
+    .page { position:relative; width:min(1440px,100%); margin:auto; padding:clamp(22px,4vw,64px); }
+    header { display:flex; justify-content:space-between; align-items:center; gap:24px; padding-bottom:26px; border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:13px; font:700 14px ui-monospace,SFMono-Regular,monospace; letter-spacing:.2em; }
+    .mark { display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--acid); border-radius:50%; color:var(--acid); box-shadow:0 0 25px #c8ff5533; }
+    .run { color:var(--muted); font:12px ui-monospace,SFMono-Regular,monospace; letter-spacing:.11em; text-align:right; }
+    .hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr); gap:clamp(36px,7vw,100px); align-items:center; padding:clamp(58px,9vw,130px) 0 clamp(50px,7vw,100px); }
+    .eyebrow,.label { color:var(--acid); font:700 11px ui-monospace,SFMono-Regular,monospace; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { max-width:820px; margin:18px 0 24px; font-size:clamp(48px,7.2vw,108px); line-height:.91; letter-spacing:-.065em; }
+    h1 em { color:var(--acid); font-style:normal; }
+    .intro { max-width:720px; color:#afb5aa; font-size:clamp(17px,1.7vw,23px); line-height:1.55; }
+    .status { display:flex; gap:12px; align-items:flex-start; margin-top:28px; padding:15px 17px; border-left:2px solid var(--cyan); background:#54dff80c; color:#c6cdc2; font-size:13px; line-height:1.5; }
+    .status b { color:var(--cyan); white-space:nowrap; }
+    .comparison { position:relative; display:grid; gap:14px; }
+    .comparison::before { content:""; position:absolute; left:50%; top:-28px; bottom:-28px; border-left:1px dashed #53604d; }
+    .run-card { position:relative; padding:clamp(22px,3vw,34px); border:1px solid var(--line); background:linear-gradient(135deg,#151914f2,#0e110eec); }
+    .run-card.assisted { border-color:#789746; box-shadow:0 24px 70px #101c0a; }
+    .run-card h2 { margin:10px 0 5px; font-size:clamp(22px,2.2vw,32px); }
+    .run-card p { margin:0; color:var(--muted); font-size:13px; }
+    .pass { position:absolute; right:20px; top:20px; padding:6px 8px; border:1px solid #52743b; color:var(--acid); font:10px ui-monospace,monospace; }
+    .metrics { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); background:#0d100d; }
+    .metric { min-height:220px; padding:clamp(22px,3vw,38px); border-right:1px solid var(--line); }
+    .metric:last-child { border:0; }
+    .metric-head { display:flex; justify-content:space-between; gap:15px; color:var(--muted); font:11px ui-monospace,monospace; letter-spacing:.12em; }
+    .delta { color:var(--acid); }
+    .values { display:flex; align-items:baseline; gap:14px; margin:30px 0 20px; }
+    .old { color:#737970; font-size:clamp(24px,3vw,44px); text-decoration:line-through; text-decoration-thickness:1px; }
+    .arrow { color:#5c6557; }
+    .new { color:var(--acid); font:500 clamp(38px,5vw,72px) ui-monospace,monospace; letter-spacing:-.06em; }
+    .track { height:3px; background:#2c322a; overflow:hidden; }
+    .track i { display:block; width:78%; height:100%; background:var(--acid); box-shadow:0 0 14px var(--acid); animation:load 1.4s cubic-bezier(.2,.8,.2,1) both; transform-origin:left; }
+    .metric:nth-child(2) .track i { width:67%; animation-delay:.12s; }
+    .metric:nth-child(3) .track i { width:78%; animation-delay:.24s; }
+    @keyframes load { from { transform:scaleX(0); } }
+    .meaning { display:grid; grid-template-columns:1fr 1fr; gap:1px; margin-top:clamp(38px,6vw,80px); border:1px solid var(--line); background:var(--line); }
+    .meaning article { padding:clamp(25px,4vw,52px); background:var(--panel); }
+    .meaning h3 { margin:14px 0; font-size:clamp(25px,3vw,42px); letter-spacing:-.04em; }
+    .meaning p { max-width:610px; margin:0; color:#a9afa5; font-size:16px; line-height:1.7; }
+    .flow { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:25px; color:#cbd1c6; font:11px ui-monospace,monospace; }
+    .flow span { padding:9px 11px; border:1px solid #3b4437; background:#0d100d; }
+    .flow b { color:var(--acid); }
+    .built-with { margin-top:clamp(70px,10vw,150px); }
+    .built-intro { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr); gap:clamp(28px,6vw,90px); align-items:end; margin-bottom:clamp(34px,5vw,64px); }
+    .built-intro h2 { max-width:780px; margin:14px 0 0; font-size:clamp(42px,6vw,84px); line-height:.95; letter-spacing:-.055em; }
+    .built-intro h2 em { color:var(--acid); font-style:normal; }
+    .built-intro p { margin:0; color:#a9afa5; font-size:clamp(16px,1.5vw,20px); line-height:1.65; }
+    .codex-loop { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; border:1px solid var(--line); background:var(--line); counter-reset:stage; }
+    .codex-loop article { position:relative; min-height:330px; padding:clamp(24px,3vw,38px); background:linear-gradient(150deg,#151a13,#0d100d); counter-increment:stage; }
+    .codex-loop article::before { content:"0" counter(stage); display:block; margin-bottom:60px; color:#66705f; font:12px ui-monospace,monospace; }
+    .codex-loop article::after { content:""; position:absolute; top:41px; left:64px; right:-1px; height:1px; background:linear-gradient(90deg,var(--acid),#3b4437); }
+    .codex-loop article:last-child::after { right:35px; }
+    .codex-loop h3 { margin:12px 0; font-size:clamp(21px,2vw,29px); letter-spacing:-.035em; }
+    .codex-loop p { margin:0; color:#9ba297; font-size:14px; line-height:1.65; }
+    .role { color:var(--acid); font:10px ui-monospace,monospace; letter-spacing:.13em; }
+    .core-note { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:start; margin-top:1px; padding:clamp(24px,3vw,38px); border:1px solid #536b38; background:linear-gradient(100deg,#c8ff5510,transparent 70%); }
+    .core-note strong { display:grid; width:54px; height:54px; place-items:center; border:1px solid var(--acid); border-radius:50%; color:var(--acid); font:20px ui-monospace,monospace; }
+    .core-note h3 { margin:0 0 7px; font-size:clamp(20px,2vw,30px); }
+    .core-note p { max-width:980px; margin:0; color:#aeb5aa; font-size:15px; line-height:1.65; }
+    footer { display:flex; justify-content:space-between; gap:30px; margin-top:34px; padding:22px 0; border-top:1px solid var(--line); color:#747b71; font:11px/1.6 ui-monospace,monospace; }
+    footer p { max-width:900px; margin:0; } footer a { color:var(--acid); }
+    @media (max-width:1100px) { .codex-loop { grid-template-columns:1fr 1fr; } }
+    @media (max-width:900px) { .hero,.built-intro { grid-template-columns:1fr; } .comparison::before { display:none; } .metrics { grid-template-columns:1fr; } .metric { min-height:0; border-right:0; border-bottom:1px solid var(--line); } .meaning { grid-template-columns:1fr; } }
+    @media (max-width:650px) { .codex-loop { grid-template-columns:1fr; } .codex-loop article { min-height:0; } }
+    @media (max-width:560px) { header,footer { align-items:flex-start; flex-direction:column; } .run { text-align:left; } .page { padding:18px; } .hero { padding-top:55px; } .metric-head { flex-direction:column; } }
+    @media (prefers-reduced-motion:reduce) { * { animation:none!important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header><div class="brand"><span class="mark">H</span> AGENT HADERACH</div><div class="run">KUB1 · KUBERNETES · HIDDEN TEST VALIDATED</div></header>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Repository experience, retrieved at the right moment</div>
+        <h1>Same correct fix.<br><em>Less work.</em></h1>
+        <p class="intro">When Haderach supplied precise experience from prior agent work, Codex reached an equivalent passing Kubernetes fix with fewer commands, fewer tokens, and less time.</p>
+        <div class="status"><b>BOTH PASSED</b><span>Evaluator-owned hidden regression tests and the broader Kubernetes structured-allocation suite.</span></div>
+      </div>
+      <div class="comparison">
+        <article class="run-card"><span class="pass">PASS</span><div class="label">Clean control</div><h2>Codex explores from scratch</h2><p>Repository tools only · 30 commands</p></article>
+        <article class="run-card assisted"><span class="pass">PASS</span><div class="label">Target-informed Haderach</div><h2>Codex inherits the signal</h2><p>Two precise prior experiences · 20 commands</p></article>
+      </div>
+    </section>
+    <section class="metrics">
+      <article class="metric"><div class="metric-head"><span>WALL TIME</span><b class="delta">17.2% FASTER</b></div><div class="values"><span class="old">262s</span><span class="arrow">→</span><span class="new">217s</span></div><div class="track"><i></i></div></article>
+      <article class="metric"><div class="metric-head"><span>COMMANDS</span><b class="delta">33.3% FEWER</b></div><div class="values"><span class="old">30</span><span class="arrow">→</span><span class="new">20</span></div><div class="track"><i></i></div></article>
+      <article class="metric"><div class="metric-head"><span>TOTAL TOKENS</span><b class="delta">22.4% FEWER</b></div><div class="values"><span class="old">994.6k</span><span class="arrow">→</span><span class="new">772.1k</span></div><div class="track"><i></i></div></article>
+    </section>
+    <section class="meaning">
+      <article><div class="label">Without shared experience</div><h3>Search, infer, rediscover.</h3><p>The clean agent reconstructed allocator behavior from code, tests, and repository history before it could confidently repair the bug.</p><div class="flow"><span>EXPLORE</span><b>→</b><span>FORM HYPOTHESIS</span><b>→</b><span>TEST</span><b>→</b><span>FIX</span></div></article>
+      <article><div class="label">With the right Haderach signal</div><h3>Retrieve, verify, build.</h3><p>Haderach surfaced the precise rollback invariant and historical test shape from a growing repository experience set. Codex still verified the evidence and authored the patch.</p><div class="flow"><span>CURATED CONTEXT</span><b>→</b><span>VERIFY</span><b>→</b><span>FIX</span></div></article>
+    </section>
+    <section class="built-with">
+      <div class="built-intro">
+        <div><div class="label">Built and tested with Codex + GPT-5.6</div><h2>AI was not a garnish.<br><em>It was the workflow.</em></h2></div>
+        <p>Codex powered by GPT-5.6 participated from the first architecture decision through implementation, deployment, and product evaluation. Haderach was then tested by the same class of coding agent it is designed to serve.</p>
+      </div>
+      <div class="codex-loop">
+        <article><span class="role">DESIGN PARTNER</span><h3>Spec before code</h3><p>We drafted and repeatedly reviewed granular specifications for architecture, storage, MCP behavior, authentication, UI, and evaluation before Codex implemented each subsystem.</p></article>
+        <article><span class="role">ENGINEERING AGENT</span><h3>Build and verify</h3><p>Codex translated those contracts into the web app, cloud service, MCP tools, database behavior, and tests—then diagnosed failures and iterated against the written acceptance criteria.</p></article>
+        <article><span class="role">DEPLOYMENT OPERATOR</span><h3>Railway through MCP</h3><p>Connected to Railway's MCP server, Codex inspected services, configured the hosted stack, deployed revisions, and troubleshot the live application while deployments remained intentionally reviewed.</p></article>
+        <article><span class="role">EVALUATION SUBJECT</span><h3>Agents testing agents</h3><p>Isolated Codex runs solved frozen repository tasks with and without Haderach. We retained command and token telemetry, applied evaluator-owned hidden tests, and reviewed the resulting patches.</p></article>
+      </div>
+      <div class="core-note"><strong>H</strong><div><h3>Codex is also the intelligence inside the product loop.</h3><p>Haderach's backend contains no LLM and makes no AI API calls. The connected Codex agent decides what experience is worth preserving, writes structured evidence through MCP, retrieves a small task-ranked context set, verifies it against the current revision, and reports whether it was useful. Haderach makes that intelligence durable and shareable across developers and future agents.</p></div></div>
+    </section>
+  </main>
+</body>
+</html>

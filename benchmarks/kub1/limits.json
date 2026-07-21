@@ -1,0 +1,13 @@
+{
+  "experiment_version": "kub1-v2",
+  "model": null,
+  "model_policy": "ChatGPT Codex account default; identical for both conditions",
+  "reasoning_effort": "high",
+  "wall_time_seconds": 3600,
+  "sandbox": "workspace-write",
+  "approval_policy": "never",
+  "web_search": false,
+  "codex_ephemeral": true,
+  "minimum_trials_per_condition": 3,
+  "conditions": ["control", "assisted"]
+}

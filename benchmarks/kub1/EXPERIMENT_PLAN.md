@@ -211,6 +211,45 @@ Repairs must not be hidden inside a measured result:
 An invalidated run may be shown as engineering evidence in the showcase, but it
 must not be included in benchmark outcome or efficiency statistics.
 
+## Validation fallback ladder
+
+Kubernetes is a large, toolchain-sensitive project. Failure to build or execute
+the preferred test harness does not automatically end KUB1. Use the strongest
+validation level that can be made reliable within the available environment and
+time, and report the achieved level explicitly.
+
+1. **Preferred:** hidden behavioral regression tests, an independent variant,
+   focused existing tests, and broader affected-package tests all execute.
+2. **Focused fallback:** run the smallest directly affected Go package or test
+   binary, using a pinned container and preloaded dependencies if the normal
+   Kubernetes `make test` workflow is unavailable.
+3. **Harness fallback:** build a minimal evaluator-owned reproduction around the
+   affected allocator behavior and exercise both the buggy and corrected source
+   paths.
+4. **Semantic patch evaluation:** if executable validation remains impossible,
+   compare each anonymized solver patch with the historical PR and independently
+   inspect whether it restores equivalent behavior and invariants. Score:
+
+   - whether the same underlying state-corruption mechanism is addressed;
+   - whether backtracking restores all mutated state;
+   - whether the fix is general rather than fixture-specific;
+   - whether affected feature-gated and allocator variants are handled;
+   - whether regression coverage would detect the historical and independent
+     cases;
+   - patch scope, maintainability, and consistency with Kubernetes conventions;
+   - suspicious copying or solution leakage.
+
+5. **Process comparison:** regardless of executable validation level, compare
+   time, tokens, repository searches, files opened, failed approaches, tests
+   attempted, retrieved Haderach entries, and reviewer-rated reasoning quality.
+
+The historical patch is evaluator-only and is never exposed to solving agents.
+Semantic similarity is evidence, not automatic correctness: a different patch
+may be equivalent or better, while a textually similar patch may still be
+incomplete. When the preferred behavioral tests do not run, the report must
+label correctness as reviewer-assessed rather than test-proven and narrow its
+claims accordingly.
+
 ## Phase 2: prepare a sanitized source snapshot
 
 1. Fetch `kubernetes/kubernetes` at the buggy revision.

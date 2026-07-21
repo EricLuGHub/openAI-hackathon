@@ -1,0 +1,42 @@
+{
+  "experiment_version": "kub1-v2",
+  "upstream_repository": "https://github.com/kubernetes/kubernetes",
+  "buggy_revision": "df4913fe88c2a5ae73ada501df3aabb1216286e2",
+  "historical_pr": 140325,
+  "sanitized_git_commit": "12adc1701a1c653577b57494a72ba0aa61b763bb",
+  "source_archive": {
+    "filename": "kubernetes-df4913fe.tar.gz",
+    "sha256": "9f38b28b393566403c5de05a2df70017c3ac4cd12e2aba3fe93af67c2b336d24"
+  },
+  "sanitized_snapshot": {
+    "filename": "kub1-v1-sanitized.tar.gz",
+    "sha256": "9a16d746e138464c212025cb274910122be685140ac70646e900d40550cfd9bd"
+  },
+  "artifacts": {
+    "solver_prompt_sha256": "14b8f8eaeb237e3cc0ad3d93633f017fcdfb1bf1e1070170c05e254186f91cba",
+    "assisted_operations_sha256": "35933a0fe7430a138e296fc4d8bc87612062b6cf18324c8ccbc090a1f05bfb49",
+    "limits_sha256": "8b284349d712306f96bccfb46e95970557e72ccd974ac1e5910037d0034c457d",
+    "hidden_tests_sha256": "aa64d990b7416898381b6e04fad2b51b09ac5c75862fcf4599bc07fc82ad99db",
+    "historical_fix_reference_sha256": "f04135641cf6681f085beb2f47a0eac668060b02e952288284c4ba1acfeb5536",
+    "approved_experience_sha256": "ea3777eb86203b62987026651035529fc5565cf75b27f5316d2b66c179e83d95"
+  },
+  "toolchain": {
+    "go": "1.26.4",
+    "container": "golang:1.26.4-bookworm",
+    "container_digest": "sha256:b305420a68d0f229d91eb3b3ed9e519fcf2cf5461da4bef997bf927e8c0bfd2b",
+    "codex_cli": "0.144.6"
+  },
+  "validated_test_command": "go test ./staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental",
+  "oracle_validation": {
+    "buggy_snapshot_with_hidden_tests": "fails primary matchAttribute backtracking regression",
+    "historical_fix_with_hidden_tests": "passes focused experimental allocator package"
+  },
+  "leak_scan": {
+    "patterns": [
+      "140325",
+      "140300",
+      "0db92c6b9646e9ffa0fbaf3049e7962b3a883c7f"
+    ],
+    "matches": 0
+  }
+}

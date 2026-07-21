@@ -1,0 +1,178 @@
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
+index cdd957f4..8f5ca671 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go
+@@ -6051,6 +6051,49 @@ func TestAllocator(t *testing.T,
+ 
+ 			expectResults: nil,
+ 		},
++		"list-attributes-match-constraint-with-backtracking": {
++			features: Features{
++				ListTypeAttributes: true,
++			},
++			claimsToAllocate: objects(claimWithRequests(
++				claim0,
++				[]resourceapi.DeviceConstraint{{
++					Requests:       []string{req1},
++					MatchAttribute: &stringAttribute,
++				}},
++				request(req1, classA, 2),
++				request(req2, classA, 1, resourceapi.DeviceSelector{
++					CEL: &resourceapi.CELDeviceSelector{
++						Expression: fmt.Sprintf(`device.attributes["%s"].type == "X"`, driverA),
++					},
++				}),
++			)),
++			classes: objects(class(classA, driverA)),
++			// The first attempt allocates device1 and device2 to req1, narrowing
++			// the common attribute value to "value1". That blocks req2 from using
++			// device2 and requires backtracking. The valid allocation of device1
++			// and device3 to req1 has the common attribute value "value2".
++			slices: unwrapResourceSlices(sliceWithDevices(slice1, node1, pool1, driverA,
++				device(device1, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value1", "value2"}},
++				}),
++				device(device2, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value1"}},
++					"type":            {StringValue: ptr.To("X")},
++				}),
++				device(device3, nil, map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
++					"stringAttribute": {StringValues: []string{"value2"}},
++				}),
++			)),
++			node: node(node1, region1),
++
++			expectResults: []any{allocationResult(
++				localNodeSelector(node1),
++				deviceAllocationResult(req1, driverA, pool1, device1, false),
++				deviceAllocationResult(req1, driverA, pool1, device3, false),
++				deviceAllocationResult(req2, driverA, pool1, device2, false),
++			)},
++		},
+ 		"list-attributes-match-constaint-list-of-string-values-without-common-elements": {
+ 			features: Features{
+ 				ListTypeAttributes: true,
+diff --git a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
+index d3d25718..6fc42ca5 100644
+--- a/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
++++ b/staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go
+@@ -290,10 +290,11 @@ func (a *Allocator) Allocate(ctx context.Context, node *v1.Node, claims []*resou
+ 					logger = klog.LoggerWithValues(logger, "matchAttribute", matchAttribute)
+ 				}
+ 				m := &matchAttributeConstraint{
+-					logger:        logger,
+-					requestNames:  sets.New(constraint.Requests...),
+-					attributeName: matchAttribute,
+-					features:      a.features,
++					logger:                logger,
++					requestNames:          sets.New(constraint.Requests...),
++					attributeName:         matchAttribute,
++					features:              a.features,
++					attributeSetsByDevice: make(map[DeviceID][]*deviceAttributeListAsSet),
+ 				}
+ 				constraints[i] = m
+ 			case constraint.DistinctAttribute != nil:
+@@ -836,6 +837,27 @@ func (s *deviceAttributeListAsSet) updateToIntersection(other *deviceAttributeLi
+ 	}
+ }
+ 
++func (s *deviceAttributeListAsSet) clone() *deviceAttributeListAsSet {
++	if s == nil {
++		return nil
++	}
++
++	clone := &deviceAttributeListAsSet{}
++	if s.intValue != nil {
++		clone.intValue = s.intValue.Clone()
++	}
++	if s.boolValue != nil {
++		clone.boolValue = s.boolValue.Clone()
++	}
++	if s.stringValue != nil {
++		clone.stringValue = s.stringValue.Clone()
++	}
++	if s.versionValue != nil {
++		clone.versionValue = s.versionValue.Clone()
++	}
++	return clone
++}
++
+ // attributeAsSet creates deviceAttributeListAsSet from DeviceAttribute.
+ // Both scalar and list attributes are converted to set representation.
+ // For scalar values, creates a single-element set.
+@@ -882,9 +904,6 @@ func attributeAsSet(attribute *resourceapi.DeviceAttribute) *deviceAttributeList
+ // All devices must share the same value. When the set of devices is
+ // empty, any device that has the attribute can be added. After that,
+ // only matching devices can be added.
+-//
+-// We don't need to track *which* devices are part of the set, only
+-// how many.
+ type matchAttributeConstraint struct {
+ 	logger        klog.Logger // Includes name and attribute name, so no need to repeat in log messages.
+ 	requestNames  sets.Set[string]
+@@ -894,8 +913,11 @@ type matchAttributeConstraint struct {
+ 	// For scalar values (existing behavior)
+ 	attribute *resourceapi.DeviceAttribute
+ 
+-	// For list values (when DRAListTypeAttributes feature gate is enabled)
+-	intersection *deviceAttributeListAsSet
++	// For list values (when DRAListTypeAttributes feature gate is enabled).
++	// All successfully added sets are retained because removing one can widen
++	// the intersection.
++	intersection          *deviceAttributeListAsSet
++	attributeSetsByDevice map[DeviceID][]*deviceAttributeListAsSet
+ 
+ 	numDevices int
+ }
+@@ -919,11 +941,13 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 		// Initialize either scalar attribute or list set based on the attribute type.
+ 		if m.features.ListTypeAttributes {
+ 			// Convert attribute to set representation (both scalar and list)
+-			m.intersection = attributeAsSet(attribute)
+-			if m.intersection == nil {
++			attributeSet := attributeAsSet(attribute)
++			if attributeSet == nil {
+ 				m.logger.V(7).Info("Attribute type unknown")
+ 				return false
+ 			}
++			m.attributeSetsByDevice[deviceID] = append(m.attributeSetsByDevice[deviceID], attributeSet)
++			m.intersection = attributeSet.clone()
+ 		} else {
+ 			// Scalar attribute: use existing behavior
+ 			m.attribute = attribute
+@@ -947,6 +971,7 @@ func (m *matchAttributeConstraint) add(requestName, subRequestName string, devic
+ 		}
+ 		// Update to intersection
+ 		m.intersection.updateToIntersection(newSet)
++		m.attributeSetsByDevice[deviceID] = append(m.attributeSetsByDevice[deviceID], newSet)
+ 	} else {
+ 		// Scalar matching: use existing behavior
+ 		switch {
+@@ -991,6 +1016,27 @@ func (m *matchAttributeConstraint) remove(requestName, subRequestName string, de
+ 		return
+ 	}
+ 
++	if m.features.ListTypeAttributes {
++		attributeSets := m.attributeSetsByDevice[deviceID]
++		m.attributeSetsByDevice[deviceID] = attributeSets[:len(attributeSets)-1]
++		if len(m.attributeSetsByDevice[deviceID]) == 0 {
++			delete(m.attributeSetsByDevice, deviceID)
++		}
++
++		// Removing a device can widen the intersection. Rebuild it from the
++		// remaining attributes so every successful add is fully reversible.
++		m.intersection = nil
++		for _, setsForDevice := range m.attributeSetsByDevice {
++			for _, attributeSet := range setsForDevice {
++				if m.intersection == nil {
++					m.intersection = attributeSet.clone()
++				} else {
++					m.intersection.updateToIntersection(attributeSet)
++				}
++			}
++		}
++	}
++
+ 	m.numDevices--
+ 	m.logger.V(7).Info("Device removed from constraint set", "device", deviceID, "numDevices", m.numDevices)
+ }

@@ -1,0 +1,44 @@
+{
+  "ended_at": "2026-07-21T09:25:20.400836+00:00",
+  "started_at": "2026-07-21T09:25:03.175180+00:00",
+  "status": "passed",
+  "steps": [
+    {
+      "command": "git apply --index /var/folders/lk/859_mgm92_bcw1bltyyvtmp00000gn/T/kub1-eval-pya24yzt/hidden-tests.patch",
+      "exit_code": 0,
+      "name": "apply_hidden_tests",
+      "stderr": "",
+      "stdout": "",
+      "timed_out": false,
+      "wall_time_seconds": 0.353
+    },
+    {
+      "command": "git apply --index --exclude=staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go /Users/ericlu/Works/openAI-hackathon/benchmarks/kub1/trials/assisted-02/final.patch",
+      "exit_code": 0,
+      "name": "apply_candidate_production",
+      "stderr": "",
+      "stdout": "",
+      "timed_out": false,
+      "wall_time_seconds": 0.337
+    },
+    {
+      "command": "docker run --rm -v /var/folders/lk/859_mgm92_bcw1bltyyvtmp00000gn/T/kub1-eval-pya24yzt/repo/snapshot-v1:/src -v kub1-gomod:/go/pkg/mod -v kub1-gobuild:/root/.cache/go-build -w /src golang:1.26.4-bookworm go test ./staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/...",
+      "exit_code": 0,
+      "name": "focused_tests",
+      "stderr": "",
+      "stdout": "ok  \tk8s.io/dynamic-resource-allocation/structured/internal/experimental\t0.120s\n",
+      "timed_out": false,
+      "wall_time_seconds": 1.665
+    },
+    {
+      "command": "docker run --rm -v /var/folders/lk/859_mgm92_bcw1bltyyvtmp00000gn/T/kub1-eval-pya24yzt/repo/snapshot-v1:/src -v kub1-gomod:/go/pkg/mod -v kub1-gobuild:/root/.cache/go-build -w /src golang:1.26.4-bookworm go test ./staging/src/k8s.io/dynamic-resource-allocation/structured/...",
+      "exit_code": 0,
+      "name": "broader_tests",
+      "stderr": "",
+      "stdout": "ok  \tk8s.io/dynamic-resource-allocation/structured\t0.156s\n?   \tk8s.io/dynamic-resource-allocation/structured/internal\t[no test files]\n?   \tk8s.io/dynamic-resource-allocation/structured/internal/allocatortesting\t[no test files]\nok  \tk8s.io/dynamic-resource-allocation/structured/internal/experimental\t(cached)\nok  \tk8s.io/dynamic-resource-allocation/structured/internal/incubating\t(cached)\nok  \tk8s.io/dynamic-resource-allocation/structured/internal/stable\t(cached)\n?   \tk8s.io/dynamic-resource-allocation/structured/schedulerapi\t[no test files]\n",
+      "timed_out": false,
+      "wall_time_seconds": 1.77
+    }
+  ],
+  "validation_level": "hidden_and_package_tests"
+}

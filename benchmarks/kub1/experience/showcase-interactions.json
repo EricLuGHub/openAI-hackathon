@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "corpus": "kub1-v1-post-evaluation-showcase",
+  "repository": "kubernetes/kubernetes",
+  "postEvaluationOnly": true,
+  "interactions": [
+    {
+      "key": "question-variant-placement",
+      "type": "question",
+      "taskSummary": "[kub1-id:question-variant-placement] Where should a cross-variant DRA regression live?",
+      "summary": "A behavior occurs in multiple structured allocator variants. Where should its regression case live so coverage does not drift?",
+      "detail": "Mock inquiry for the post-evaluation graph. It carries no KUB1 target mechanism or solution.",
+      "revision": "e8d0a0f24b6805c8613f0914eea63c4f6c6abf87",
+      "paths": ["staging/src/k8s.io/dynamic-resource-allocation/structured/internal"],
+      "services": ["dynamic-resource-allocation"],
+      "keywords": ["allocatortesting", "variant parity"]
+    },
+    {
+      "key": "answer-variant-placement",
+      "type": "answer",
+      "sourceKey": "question-variant-placement",
+      "taskSummary": "[kub1-id:answer-variant-placement] Use the shared allocatortesting behavior table",
+      "summary": "Put cross-variant behavior in structured/internal/allocatortesting/allocator_testing.go and confirm each applicable variant invokes the shared table with the required Features.",
+      "detail": "Mock response grounded in PRs #137190 and #138885; it links to the mock question only after benchmark scoring.",
+      "revision": "e8d0a0f24b6805c8613f0914eea63c4f6c6abf87",
+      "paths": ["staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go"],
+      "services": ["dynamic-resource-allocation"],
+      "keywords": ["shared allocator harness", "stable", "incubating", "experimental"]
+    }
+  ],
+  "reuse": [
+    {
+      "experienceKey": "pr137190-allocator-map",
+      "relevant": true,
+      "stillValid": true,
+      "outcome": "successful",
+      "evidence": "Mock predecessor-to-successor reuse: PR #135022 used the shared allocatortesting workflow for externally visible constraint behavior. Post-evaluation showcase data only."
+    },
+    {
+      "experienceKey": "pr138885-variant-parity",
+      "relevant": true,
+      "stillValid": true,
+      "outcome": "successful",
+      "evidence": "Mock verified reuse: PR #138885 applied equivalent candidate construction changes across all three variants and centralized regression behavior in allocatortesting. Post-evaluation showcase data only."
+    }
+  ]
+}

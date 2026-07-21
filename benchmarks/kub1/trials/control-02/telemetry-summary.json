@@ -1,0 +1,19 @@
+{
+  "command_count": 30,
+  "event_count": 50,
+  "event_types": {
+    "item.completed": 25,
+    "item.started": 20,
+    "item.updated": 2,
+    "thread.started": 1,
+    "turn.completed": 1,
+    "turn.started": 1
+  },
+  "malformed_event_lines": 0,
+  "reported_token_fields": {
+    "usage.cached_input_tokens": 916224,
+    "usage.input_tokens": 983331,
+    "usage.output_tokens": 11242,
+    "usage.reasoning_output_tokens": 4849
+  }
+}

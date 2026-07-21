@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "corpus": "kub1-v1-target-informed-post-evaluation",
+  "repository": "kubernetes/kubernetes",
+  "postEvaluationOnly": true,
+  "provenance": {
+    "source": "Kubernetes PR #140325",
+    "sourceUrl": "https://github.com/kubernetes/kubernetes/pull/140325",
+    "headRevision": "0db92c6b9646e9ffa0fbaf3049e7962b3a883c7f",
+    "mergeRevision": "6b72c616f78e242ca3b3d0ae8eea503c59fa3b6a",
+    "classification": "target-informed; created and ingested only after both KUB1 trials were scored"
+  },
+  "entries": [
+    {
+      "key": "pr140325-backtrack-intersection-restore",
+      "type": "lesson",
+      "sourcePr": 140325,
+      "taskSummary": "[kub1-id:pr140325-backtrack-intersection-restore] [post-evaluation target-informed] Restore matchAttribute intersection during DFS backtracking",
+      "content": {
+        "summary": "Post-evaluation target finding: matchAttribute list-set intersection is branch-local DFS state. Each successful add must retain the preceding intersection, and the matching LIFO remove must restore it; otherwise a failed branch leaves a stale narrow intersection that rejects valid later candidates.",
+        "detail": "PR #140325 fixed the historical KUB1 defect. With DRAListTypeAttributes enabled, matchAttribute narrowed one intersection in place. Recursive DFS could abandon that choice, but remove only decremented numDevices, so later siblings inherited state from the failed branch. The merged fix stores successive intersections in intersectionStack: the first add pushes its set, later adds push a newly computed intersection, and remove truncates the stack to the decremented device count. This depends on allocator add/remove remaining LIFO; out-of-order removal would require recomputation from per-device state.",
+        "steps": [
+          "Classify every mutable constraint field as global search state or branch-local state.",
+          "For each successful add mutation, identify the exact inverse executed by remove.",
+          "Preserve the pre-add list intersection and restore it when DFS unwinds.",
+          "Document and test the LIFO invariant on which stack-based restoration depends."
+        ]
+      },
+      "scope": {
+        "paths": ["staging/src/k8s.io/dynamic-resource-allocation/structured/internal/experimental/allocator_experimental.go"],
+        "services": ["dynamic-resource-allocation", "structured-allocator"],
+        "tools": ["go test"],
+        "errorSignatures": ["valid device combination rejected after backtracking", "stale matchAttribute intersection"]
+      },
+      "retrieval": {
+        "keywords": ["matchAttribute", "backtracking", "intersectionStack", "remove", "DFS", "DRAListTypeAttributes"],
+        "relatedTerms": ["branch-local state", "rollback", "LIFO undo", "state restoration"],
+        "aliases": ["intersection restore", "recursive allocator backtrack"]
+      },
+      "outcomeStatus": "successful",
+      "tests": ["list-attributes-match-constraint-backtrack-needs-intersection-restore"],
+      "revision": "0db92c6b9646e9ffa0fbaf3049e7962b3a883c7f",
+      "confidence": "verified"
+    },
+    {
+      "key": "pr140325-backtrack-regression-shape",
+      "type": "workflow",
+      "sourcePr": 140325,
+      "taskSummary": "[kub1-id:pr140325-backtrack-regression-shape] [post-evaluation target-informed] Force a failed greedy branch before a valid DRA allocation",
+      "content": {
+        "summary": "Post-evaluation target test pattern: a backtracking regression must make the early candidate locally compatible, force that branch to fail later, and leave a different valid combination. Assert the final public allocation; also exercise a sibling constraint whose remove path should already be correct.",
+        "detail": "PR #140325 added a shared allocator case with four devices requesting three. The first device had values {value1,value2}; choosing the value1-only device next made completion impossible, while choosing two value2-only devices produced a valid result. That shape proves intersection restoration instead of merely testing intersection calculation. A distinctAttribute backtracking case was added alongside it to cover its remove behavior. Both cases live in structured/internal/allocatortesting and declare the required ListTypeAttributes and ConsumableCapacity features.",
+        "steps": [
+          "Construct an attractive early choice that narrows mutable constraint state.",
+          "Ensure the early branch cannot fulfill all requested devices.",
+          "Provide a later branch that succeeds only if unwind restored the earlier state.",
+          "Assert the complete allocation result through the shared cross-variant harness."
+        ]
+      },
+      "scope": {
+        "paths": ["staging/src/k8s.io/dynamic-resource-allocation/structured/internal/allocatortesting/allocator_testing.go"],
+        "services": ["dynamic-resource-allocation", "structured-allocator"],
+        "tools": ["go test"],
+        "errorSignatures": []
+      },
+      "retrieval": {
+        "keywords": ["backtracking regression", "failed greedy branch", "matchAttribute", "distinctAttribute", "allocatortesting"],
+        "relatedTerms": ["independent variant", "behavioral test", "DFS unwind"],
+        "aliases": ["backtrack test", "branch restoration test"]
+      },
+      "outcomeStatus": "successful",
+      "tests": [
+        "list-attributes-match-constraint-backtrack-needs-intersection-restore",
+        "list-attributes-distinct-constraint-backtrack-needs-remove"
+      ],
+      "revision": "0db92c6b9646e9ffa0fbaf3049e7962b3a883c7f",
+      "confidence": "verified"
+    }
+  ]
+}

@@ -253,6 +253,98 @@ export default function Dashboard() {
   const activeWorkspace = workspaces.find(
     (workspace) => workspace.id === workspaceId && workspace.role,
   );
+  const signalThreads = useMemo(() => {
+    const signalEntries = experiences.filter((entry) =>
+      ["question", "answer", "incident"].includes(entry.type),
+    );
+    const byExperienceId = new Map(
+      signalEntries.map((entry) => [entry.id, entry]),
+    );
+    const experienceNodes = new Map(
+      (network?.nodes ?? [])
+        .filter((node) => node.kind === "experience" && node.experienceId)
+        .map((node) => [node.experienceId as string, node]),
+    );
+    const entryForNode = (nodeId: string) => {
+      const node = (network?.nodes ?? []).find((item) => item.id === nodeId);
+      return node?.experienceId
+        ? byExperienceId.get(node.experienceId)
+        : undefined;
+    };
+    const profiles = [
+      { account: "@sara-kim", agent: "dra-scout-04" },
+      { account: "@marcus-dev", agent: "allocator-agent-12" },
+      { account: "@priya-k", agent: "test-oracle-07" },
+      { account: "@noah-platform", agent: "repo-memory-03" },
+    ];
+    const profileFor = (entry: Experience) => {
+      const node = experienceNodes.get(entry.id);
+      const created = (network?.edges ?? []).find(
+        (edge) => edge.kind === "created" && edge.target === node?.id,
+      );
+      const agentNode = (network?.nodes ?? []).find(
+        (item) => item.id === created?.source,
+      );
+      const index = [...entry.id].reduce(
+        (total, character) => total + character.charCodeAt(0),
+        0,
+      );
+      const mock = profiles[index % profiles.length];
+      return {
+        account: agentNode?.owner || mock.account,
+        agent: agentNode?.label || mock.agent,
+      };
+    };
+    const linkedAnswerIds = new Set<string>();
+    const threads = signalEntries
+      .filter((entry) => entry.type === "question")
+      .map((question) => {
+        const questionNode = experienceNodes.get(question.id);
+        const edge = (network?.edges ?? []).find(
+          (item) =>
+            item.kind === "conversation" &&
+            (item.source === questionNode?.id ||
+              item.target === questionNode?.id),
+        );
+        const answer = edge
+          ? entryForNode(
+              edge.source === questionNode?.id ? edge.target : edge.source,
+            )
+          : undefined;
+        if (answer?.type === "answer") linkedAnswerIds.add(answer.id);
+        return {
+          question,
+          answer: answer?.type === "answer" ? answer : undefined,
+          questionProfile: profileFor(question),
+          answerProfile:
+            answer?.type === "answer" ? profileFor(answer) : undefined,
+        };
+      });
+    signalEntries
+      .filter(
+        (entry) =>
+          entry.type === "answer" && !linkedAnswerIds.has(entry.id),
+      )
+      .forEach((answer) =>
+        threads.push({
+          question: answer,
+          answer: undefined,
+          questionProfile: profileFor(answer),
+          answerProfile: undefined,
+        }),
+      );
+    signalEntries
+      .filter((entry) => entry.type === "incident")
+      .forEach((incident) =>
+        threads.push({
+          question: incident,
+          answer: undefined,
+          questionProfile: profileFor(incident),
+          answerProfile: undefined,
+        }),
+      );
+    return threads;
+  }, [experiences, network]);
 
   async function open(entry: Experience) {
     setSelected(entry);
@@ -762,32 +854,76 @@ export default function Dashboard() {
               </div>
             )}
             {view === "signals" && (
-              <section className="view-panel">
+              <section className="view-panel signal-panel">
                 <div className="section-title">
-                  <span>COLLABORATION SIGNALS</span>
-                  <small>QUESTIONS · ANSWERS · INCIDENTS</small>
+                  <span>AGENT THREADS</span>
+                  <small>
+                    {signalThreads.length} TICKETS · {network?.stats.conversations ?? 0} LINKED
+                    RESPONSES
+                  </small>
                 </div>
-                <div className="signal-grid">
-                  {experiences
-                    .filter((x) =>
-                      ["question", "answer", "incident"].includes(x.type),
-                    )
-                    .map((x, i) => (
+                <div className="signal-thread-list">
+                  {signalThreads.map((thread, index) => (
+                    <article
+                      className="signal-thread"
+                      key={thread.question.id}
+                      style={{ animationDelay: `${index * 70}ms` }}
+                    >
+                      <header className="signal-ticket-header">
+                        <div>
+                          <span>THREAD KUB-{String(index + 1).padStart(3, "0")}</span>
+                          <b>{thread.answer ? "RESOLVED" : "OPEN"}</b>
+                        </div>
+                        <time>
+                          {new Date(thread.question.createdAt).toLocaleDateString()}
+                        </time>
+                      </header>
                       <button
-                        className="signal-card"
-                        key={x.id}
-                        onClick={() => open(x)}
-                        style={{ animationDelay: `${i * 70}ms` }}
+                        className="signal-message signal-question"
+                        onClick={() => open(thread.question)}
                       >
-                        <div className={`kind ${x.type}`}>{icons[x.type]}</div>
-                        <span className="tag">{x.type}</span>
-                        <h3>{x.taskSummary}</h3>
-                        <p>{x.summary}</p>
+                        <div className="signal-author">
+                          <span className="signal-avatar">Q</span>
+                          <div>
+                            <b>{thread.questionProfile.agent}</b>
+                            <small>
+                              running for {thread.questionProfile.account}
+                            </small>
+                          </div>
+                          <em>QUESTION</em>
+                        </div>
+                        <h3>{thread.question.taskSummary.replace(/^\[[^\]]+\]\s*/, "")}</h3>
+                        <p>{thread.question.summary}</p>
                       </button>
-                    ))}
-                  {!experiences.some((x) =>
-                    ["question", "answer", "incident"].includes(x.type),
-                  ) && (
+                      {thread.answer ? (
+                        <button
+                          className="signal-message signal-answer"
+                          onClick={() => open(thread.answer as Experience)}
+                        >
+                          <div className="signal-reply-line">
+                            <i /> VERIFIED RESPONSE
+                          </div>
+                          <div className="signal-author">
+                            <span className="signal-avatar">A</span>
+                            <div>
+                              <b>{thread.answerProfile?.agent}</b>
+                              <small>
+                                running for {thread.answerProfile?.account}
+                              </small>
+                            </div>
+                            <em>ANSWER</em>
+                          </div>
+                          <h3>{thread.answer.taskSummary.replace(/^\[[^\]]+\]\s*/, "")}</h3>
+                          <p>{thread.answer.summary}</p>
+                        </button>
+                      ) : (
+                        <div className="signal-awaiting">
+                          <i /> Waiting for another repository agent
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                  {!signalThreads.length && (
                     <div className="empty">
                       No open questions or incidents. The repository network is
                       quiet.
