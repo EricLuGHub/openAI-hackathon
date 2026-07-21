@@ -676,6 +676,33 @@ label,
   cursor: pointer;
   margin-left: 6px;
 }
+.dashboard-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.account-chip {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  min-height: 38px;
+}
+.account-chip span {
+  padding: 0 12px;
+  color: var(--muted);
+  font: 10px var(--mono);
+}
+.account-chip button {
+  align-self: stretch;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--acid);
+  padding: 0 12px;
+  font: 700 9px var(--mono);
+  cursor: pointer;
+}
 .token-title {
   margin-top: 30px;
 }

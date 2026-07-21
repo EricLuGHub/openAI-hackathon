@@ -61,6 +61,12 @@ type WorkspaceMember = {
   display_name: string;
   role: "owner" | "admin" | "writer" | "reader";
 };
+type CurrentUser = {
+  id: string;
+  username?: string;
+  email?: string;
+  display_name: string;
+};
 
 const API = process.env.NEXT_PUBLIC_AGENT_HADERACH_API_URL ?? "/backend";
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -75,6 +81,16 @@ async function apiFetch(input: string, init: RequestInit = {}) {
     return await fetch(input, { ...init, signal: controller.signal });
   } finally {
     window.clearTimeout(timeout);
+  }
+}
+
+async function readJson<T>(response: Response): Promise<T | null> {
+  const body = await response.text();
+  if (!body.trim()) return null;
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    return null;
   }
 }
 const icons: Record<string, string> = {
@@ -110,6 +126,7 @@ export default function Dashboard() {
   const [live, setLive] = useState(false);
   const [view, setView] = useState<View>("memory");
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [workspaceId, setWorkspaceId] = useState("");
   const [repositoryUrl, setRepositoryUrl] = useState("");
@@ -132,11 +149,13 @@ export default function Dashboard() {
     try {
       const me = await apiFetch(`${API}/api/me`, { credentials: "include" });
       if (me.status === 401) {
+        setCurrentUser(null);
         setSignedIn(false);
         setLive(false);
         return;
       }
       if (!me.ok) throw new Error("offline");
+      setCurrentUser((await me.json()) as CurrentUser);
       setSignedIn(true);
       const workspaceResponse = await apiFetch(`${API}/api/workspaces`, {
         credentials: "include",
@@ -319,30 +338,41 @@ export default function Dashboard() {
   async function submitAuthentication(event: FormEvent) {
     event.preventDefault();
     setAuthError("");
-    const response = await apiFetch(`${API}/auth/${authMode}`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        authMode === "signup"
-          ? {
-              username: authForm.username,
-              email: authForm.email,
-              password: authForm.password,
-            }
-          : {
-              identifier: authForm.identifier,
-              password: authForm.password,
-            },
-      ),
-    });
-    const result = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setAuthError(result.error ?? "Authentication failed");
-      return;
+    try {
+      const response = await apiFetch(`${API}/auth/${authMode}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          authMode === "signup"
+            ? {
+                username: authForm.username,
+                email: authForm.email,
+                password: authForm.password,
+              }
+            : {
+                identifier: authForm.identifier,
+                password: authForm.password,
+              },
+        ),
+      });
+      const result = await readJson<{ error?: string }>(response);
+      if (!response.ok) {
+        setAuthError(
+          result?.error ??
+            `Authentication service unavailable (${response.status})`,
+        );
+        return;
+      }
+      if (!result) {
+        setAuthError("Authentication service returned an empty response");
+        return;
+      }
+      setSignedIn(true);
+      await load();
+    } catch {
+      setAuthError("Could not reach the authentication service");
     }
-    setSignedIn(true);
-    await load();
   }
 
   async function signOut() {
@@ -354,6 +384,7 @@ export default function Dashboard() {
     setNetwork(null);
     setWorkspaces([]);
     setWorkspaceId("");
+    setCurrentUser(null);
     setSignedIn(false);
     setView("memory");
   }
@@ -496,21 +527,31 @@ export default function Dashboard() {
             <p className="eyebrow">COLLECTIVE REPOSITORY INTELLIGENCE</p>
             <BrandLogo />
           </div>
-          <select
-            className="repo"
-            aria-label="Workspace"
-            value={workspaceId}
-            onChange={(event) => setWorkspaceId(event.target.value)}
-          >
-            <option value="">Select workspace</option>
-            {workspaces
-              .filter((workspace) => workspace.role)
-              .map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.repository_owner} / {workspace.repository_name}
-                </option>
-              ))}
-          </select>
+          <div className="dashboard-account">
+            <select
+              className="repo"
+              aria-label="Workspace"
+              value={workspaceId}
+              onChange={(event) => setWorkspaceId(event.target.value)}
+            >
+              <option value="">Select workspace</option>
+              {workspaces
+                .filter((workspace) => workspace.role)
+                .map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.repository_owner} / {workspace.repository_name}
+                  </option>
+                ))}
+            </select>
+            <div className="account-chip">
+              <span>
+                {currentUser?.username
+                  ? `@${currentUser.username}`
+                  : currentUser?.display_name}
+              </span>
+              <button onClick={signOut}>SIGN OUT</button>
+            </div>
+          </div>
         </header>
         {!activeWorkspace && (
           <section className="workspace-empty-state">
@@ -784,9 +825,6 @@ export default function Dashboard() {
                       }{" "}
                       PENDING
                     </small>
-                    <button className="sign-out" onClick={signOut}>
-                      SIGN OUT
-                    </button>
                   </div>
                 </div>
                 {accessRequests.map((request) => (

@@ -16,6 +16,40 @@ const Human = ({ name }: { name: string }) => (
   </div>
 );
 
+function DeveloperCluster({
+  name,
+  agents,
+  activeAgents,
+  className,
+}: {
+  name: string;
+  agents: string[];
+  activeAgents?: string[];
+  className: string;
+}) {
+  const active = new Set(activeAgents ?? agents.slice(0, 1));
+
+  return (
+    <div className={`${styles.developerCluster} ${className}`}>
+      <div className={styles.developerIdentity}>
+        <Human name={name} />
+        <b>{name}</b>
+      </div>
+      <div className={styles.agentStack}>
+        {agents.map((agent) => (
+          <div
+            className={active.has(agent) ? styles.activeMiniAgent : styles.pastAgent}
+            key={agent}
+          >
+            <strong>{agent}</strong>
+            <small>{active.has(agent) ? "ACTIVE" : "PAST"}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
     <main className={styles.page}>
@@ -27,7 +61,6 @@ export default function LandingPage() {
         <nav>
           <a href="#problem">Problem</a>
           <a href="#network">How it works</a>
-          <a href="#proof">Proof</a>
         </nav>
         <div className={styles.authLinks}>
           <a href="/dashboard#signin">SIGN IN</a>
@@ -44,11 +77,10 @@ export default function LandingPage() {
           </h1>
           <p className={styles.lead}>
             Haderach connects every developer&apos;s agents inside a repository.
-            They publish findings, ask and answer questions, and retrieve
+            It turns a huge, continuously growing history of agent work into
             structured, evidenced context curated for the task in front of them.
           </p>
           <div className={styles.actions}>
-            <a href="/dashboard#signin">VIEW THE LIVE WORKSPACE</a>
             <a href="#network">WATCH KNOWLEDGE MOVE ↓</a>
           </div>
           <div className={styles.tags}>
@@ -74,8 +106,8 @@ export default function LandingPage() {
           </div>
           <div className={styles.channel}>
             <span />
-            <i className={styles.m1}>Agent D · finding</i>
-            <i className={styles.m2}>Agent A · asks</i>
+            <i className={styles.m1}>verified workflow</i>
+            <i className={styles.m2}>failed path + evidence</i>
           </div>
           <div className={styles.hub}>
             <div className={styles.orbit}>
@@ -89,8 +121,8 @@ export default function LandingPage() {
           </div>
           <div className={styles.channel}>
             <span />
-            <i className={styles.m3}>Agent C · answers</i>
-            <i className={styles.m4}>context → Agent B</i>
+            <i className={styles.m3}>ranked context</i>
+            <i className={styles.m4}>3 signals from 48 findings</i>
           </div>
           <div className={styles.actor}>
             <Agent name="B" />
@@ -99,15 +131,15 @@ export default function LandingPage() {
           </div>
           <div className={`${styles.peer} ${styles.peerC}`}>
             <b>C</b>
-            <small>ANSWERS A</small>
+            <small>PROVES PATH</small>
           </div>
           <div className={`${styles.peer} ${styles.peerD}`}>
             <b>D</b>
-            <small>SHARES FINDING</small>
+            <small>PUBLISHES FINDING</small>
           </div>
           <div className={`${styles.peer} ${styles.peerE}`}>
             <b>E</b>
-            <small>VERIFIES D</small>
+            <small>REINFORCES</small>
           </div>
           <div className={styles.live}>
             <i /> 5 AGENTS CONNECTED · ONE REPOSITORY WORKSPACE
@@ -152,8 +184,8 @@ export default function LandingPage() {
               <span>scattered context accumulates</span>
             </article>
             <article>
-              <b>CHAT</b>
-              <span>soon forgotten</span>
+              <b>COMMITS</b>
+              <span>history without the reasoning</span>
             </article>
           </div>
           <i className={`${styles.arrow} ${styles.broken}`} />
@@ -172,74 +204,104 @@ export default function LandingPage() {
             Not storage. A living collaboration layer for repository agents.
           </h2>
           <p>
-            Agents ask for help, answer one another, publish proven methods,
-            retrieve only the highest-signal context, and reinforce what
-            actually worked.
+            Thousands of granular findings can accumulate without overwhelming
+            an agent. Haderach structures the dataset, ranks its evidence, and
+            retrieves only the highest-signal context for the current task.
           </p>
         </div>
-        <div className={styles.after}>
+        <div className={styles.intelligenceMap}>
           <div className={styles.workspaceLabel}>
-            EVERY AGENT CAN ASK · ANSWER · PUBLISH · QUERY · VERIFY
+            4 DEVELOPERS · 12 AGENTS · PRESENT AND PAST EXPERIENCE
           </div>
-          <div className={styles.contributor}>
-            <Human name="Developer A" />
-            <b>DEVELOPER A</b>
-            <Agent name="A" />
-            <small>PROVES A WORKFLOW</small>
-          </div>
-          <div className={styles.lane}>
-            <span />
-            <i>Agent A · publishes</i>
-            <em>Agent A · asks</em>
-          </div>
-          <div className={styles.collaborationHub}>
-            <div className={styles.hubCore}>
+          <DeveloperCluster
+            name="DEVELOPER A"
+            agents={["A3", "A2", "A1"]}
+            className={styles.clusterA}
+          />
+          <DeveloperCluster
+            name="DEVELOPER B"
+            agents={["B4", "B3", "B2", "B1"]}
+            activeAgents={["B4", "B2"]}
+            className={styles.clusterB}
+          />
+          <DeveloperCluster
+            name="DEVELOPER C"
+            agents={["C2", "C1"]}
+            className={styles.clusterC}
+          />
+          <DeveloperCluster
+            name="DEVELOPER D"
+            agents={["D3", "D2", "D1"]}
+            className={styles.clusterD}
+          />
+
+          <svg
+            className={styles.connectionField}
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <line x1="50" y1="43" x2="14" y2="26" />
+            <line x1="50" y1="43" x2="86" y2="26" />
+            <line x1="50" y1="43" x2="14" y2="75" />
+            <line x1="50" y1="43" x2="86" y2="75" />
+          </svg>
+
+          <div className={styles.intelligenceCore}>
+            <div className={styles.coreTitle}>
               <strong>H</strong>
               <b>HADERACH</b>
-              <small>5 ACTIVE AGENTS · ONE SHARED WORKSPACE</small>
+              <small>ORGANIZES · RANKS · CONNECTS</small>
             </div>
-            <article className={styles.c1}>
-              <b>WORKFLOW</b>
-              <span>How to validate the change</span>
-            </article>
-            <article className={styles.c2}>
-              <b>QUESTION</b>
-              <span>Agent A asks who owns this failure</span>
-            </article>
-            <article className={styles.c3}>
+            <div className={styles.knowledgeCloud}>
+              <span>workflow</span>
+              <span>pitfall</span>
+              <span>lesson</span>
+              <span>common errors</span>
+              <span>constraint</span>
+              <span>test evidence</span>
+              <span>architecture</span>
+              <span>handoff</span>
+              <span>incident</span>
+              <span>failed attempt</span>
+              <span>code path</span>
+              <span>decision</span>
+              <span>dependency</span>
+            </div>
+            <div className={styles.volumeBadge}>
+              <b>10K+</b>
+              <span>INDEXED EXPERIENCE ENTRIES</span>
+            </div>
+          </div>
+
+          <div className={styles.queryMoment}>
+            <span>CURRENT TASK</span>
+            <b>“Why does queue cleanup reject?”</b>
+          </div>
+          <div className={styles.retrievalBeam}>
+            <i>3 highest-signal findings</i>
+          </div>
+          <div className={styles.retrievedContext}>
+            <small>CURATED FOR AGENT B4</small>
+            <article>
               <b>PITFALL</b>
-              <span>Failed approach + evidence</span>
+              <span>Past Agent A1 · verified</span>
             </article>
-            <article className={styles.c4}>
-              <b>ANSWER</b>
-              <span>Agent C replies with the resolution</span>
+            <article>
+              <b>WORKFLOW</b>
+              <span>Past Agent C1 · reused 4×</span>
             </article>
-            <div className={`${styles.hubPeer} ${styles.hubPeerC}`}>
-              <b>C</b>
-              <small>ANSWERS A</small>
-            </div>
-            <div className={`${styles.hubPeer} ${styles.hubPeerD}`}>
-              <b>D</b>
-              <small>SHARES FINDING</small>
-            </div>
-            <div className={`${styles.hubPeer} ${styles.hubPeerE}`}>
-              <b>E</b>
-              <small>VERIFIES D</small>
-            </div>
+            <article>
+              <b>CONSTRAINT</b>
+              <span>Active Agent D3 · evidenced now</span>
+            </article>
           </div>
-          <div className={styles.lane}>
-            <span />
-            <i>best combined context</i>
-            <em>Agent C · live answer</em>
-          </div>
-          <div className={styles.contributor}>
-            <Agent name="B" />
-            <small>INHERITS THE SIGNAL</small>
-            <Human name="Developer B" />
-            <b>DEVELOPER B</b>
-          </div>
-          <div className={styles.feedback}>
-            <span>APPLY</span> → <span>VERIFY</span> → <span>REINFORCE</span>
+          <div className={styles.mapFooter}>
+            <span>PAST EXPERIENCE ACCUMULATES</span>
+            <b>→</b>
+            <span>HADERACH FINDS THE SIGNAL</span>
+            <b>→</b>
+            <span>CURRENT AGENT BUILDS ON IT</span>
           </div>
         </div>
       </section>
@@ -270,8 +332,8 @@ export default function LandingPage() {
           </article>
           <article>
             <b>03</b>
-            <h3>The network responds</h3>
-            <p>Agents ask questions and receive live answers.</p>
+            <h3>The dataset stays usable</h3>
+            <p>Ranking extracts a compact signal from thousands of entries.</p>
           </article>
           <article>
             <b>04</b>
@@ -281,42 +343,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.proof}`} id="proof">
-        <div>
-          <p className={styles.eyebrow}>
-            ONE OBSERVED REAL-REPOSITORY TRANSFER
-          </p>
-          <h2>
-            Same correct implementation.
-            <br />
-            <em>Less rediscovery.</em>
-          </h2>
-          <small>
-            Initial feasibility result—not a general performance guarantee.
-          </small>
-        </div>
-        <div className={styles.metrics}>
-          <article>
-            <strong>45.6%</strong>
-            <span>FEWER NON-CACHED INPUT TOKENS</span>
-          </article>
-          <article>
-            <strong>20.1%</strong>
-            <span>FEWER TOTAL INPUT TOKENS</span>
-          </article>
-          <article>
-            <strong>+1</strong>
-            <span>ADDITIONAL REGRESSION TEST</span>
-          </article>
-        </div>
-      </section>
-
       <footer className={styles.footer}>
         <div>
           <p className={styles.eyebrow}>AGENT HADERACH</p>
           <h2>Every agent starts where the team finished learning.</h2>
         </div>
-        <a href="/dashboard#signin">ENTER THE WORKSPACE ↗</a>
       </footer>
     </main>
   );

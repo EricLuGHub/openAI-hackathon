@@ -142,20 +142,13 @@
   gap: 24px;
   margin-top: 35px;
 }
-.actions a:first-child {
+.actions a {
   padding: 14px 18px;
   background: var(--lime);
   color: #090b09;
   text-decoration: none;
   font:
     600 9px DM Mono,
-    monospace;
-}
-.actions a:last-child {
-  color: #8d9689;
-  text-decoration: none;
-  font:
-    9px DM Mono,
     monospace;
 }
 .tags {
@@ -277,6 +270,7 @@
 .channel {
   height: 1px;
   position: relative;
+  z-index: 1;
   background: #45533e;
 }
 .channel span:after {
@@ -292,7 +286,7 @@
 .lane em {
   position: absolute;
   left: 0;
-  top: -14px;
+  top: -48px;
   padding: 7px 10px;
   border: 1px solid #526842;
   background: #111710;
@@ -307,12 +301,14 @@
   animation: move 8s linear infinite;
 }
 .m2 {
+  top: 22px !important;
   animation: move 8s 4s linear infinite;
 }
 .m3 {
   animation: move 8s 1s linear infinite;
 }
 .m4 {
+  top: 22px !important;
   animation: move 8s 5s linear infinite;
 }
 .hub {
@@ -324,6 +320,7 @@
   border: 1px solid var(--lime);
   border-radius: 50%;
   position: relative;
+  z-index: 8;
   background: #131b11;
   box-shadow: 0 0 45px #c8ff5518;
 }
@@ -1040,6 +1037,329 @@
 .feedback {
   font-size: 11px;
 }
+.intelligenceMap {
+  min-height: 720px;
+  border: 1px solid #34422f;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 44%, #c8ff550d, transparent 32%),
+    linear-gradient(#11151066 1px, transparent 1px),
+    linear-gradient(90deg, #11151066 1px, transparent 1px), #0c0f0c;
+  background-size:
+    auto,
+    32px 32px,
+    32px 32px,
+    auto;
+}
+.developerCluster {
+  width: 235px;
+  padding: 15px;
+  border: 1px solid #364232;
+  position: absolute;
+  z-index: 4;
+  background: #10140fdd;
+}
+.developerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.developerIdentity .human {
+  width: 43px;
+  height: 43px;
+}
+.developerIdentity .human i {
+  left: 13px;
+  top: 6px;
+}
+.developerIdentity .human b {
+  left: 6px;
+  bottom: 5px;
+}
+.developerIdentity > b {
+  font:
+    12px DM Mono,
+    monospace;
+}
+.agentStack {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.activeMiniAgent,
+.pastAgent {
+  width: 43px;
+  height: 50px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  clip-path: polygon(50% 0, 94% 25%, 94% 75%, 50% 100%, 6% 75%, 6% 25%);
+  background: #637456;
+  position: relative;
+}
+.activeMiniAgent:before,
+.pastAgent:before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  clip-path: inherit;
+  background: #131912;
+}
+.activeMiniAgent strong,
+.activeMiniAgent small,
+.pastAgent strong,
+.pastAgent small {
+  position: relative;
+  z-index: 1;
+}
+.activeMiniAgent strong {
+  color: var(--lime);
+  font:
+    13px DM Mono,
+    monospace;
+}
+.activeMiniAgent small {
+  color: var(--lime);
+  font:
+    6px DM Mono,
+    monospace;
+}
+.pastAgent {
+  opacity: 0.34;
+  filter: grayscale(0.45);
+}
+.pastAgent strong {
+  color: #c4cbbf;
+  font:
+    12px DM Mono,
+    monospace;
+}
+.pastAgent small {
+  color: #8b9387;
+  font:
+    6px DM Mono,
+    monospace;
+}
+.clusterA {
+  left: 28px;
+  top: 105px;
+}
+.clusterB {
+  right: 28px;
+  top: 105px;
+}
+.clusterC {
+  left: 28px;
+  bottom: 100px;
+}
+.clusterD {
+  right: 28px;
+  bottom: 100px;
+}
+.connectionField {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.connectionField line {
+  stroke: #8db647;
+  stroke-width: 0.12;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.72;
+}
+.intelligenceCore {
+  width: 500px;
+  min-height: 425px;
+  padding: 28px;
+  border: 2px solid #789c52;
+  border-radius: 28px;
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 43%;
+  transform: translate(-50%, -50%);
+  background: #10170eee;
+  box-shadow:
+    0 0 70px #c8ff5512,
+    inset 0 0 45px #c8ff5508;
+}
+.coreTitle {
+  display: grid;
+  justify-items: center;
+  margin-bottom: 20px;
+}
+.coreTitle strong {
+  color: var(--lime);
+  font:
+    30px DM Mono,
+    monospace;
+}
+.coreTitle b {
+  font:
+    15px DM Mono,
+    monospace;
+}
+.coreTitle small {
+  margin-top: 4px;
+  color: #819078;
+  font:
+    8px DM Mono,
+    monospace;
+}
+.knowledgeCloud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+.knowledgeCloud span {
+  padding: 9px 8px;
+  border: 1px solid #3b4935;
+  background: #151c13;
+  color: #aeb7aa;
+  font:
+    9px DM Mono,
+    monospace;
+  animation: knowledgePulse 5s ease-in-out infinite;
+}
+.knowledgeCloud span:nth-child(3n + 2) {
+  animation-delay: -1.7s;
+}
+.knowledgeCloud span:nth-child(3n) {
+  animation-delay: -3.4s;
+}
+.volumeBadge {
+  margin-top: 18px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  color: var(--lime);
+}
+.volumeBadge b {
+  font:
+    30px DM Mono,
+    monospace;
+}
+.volumeBadge span {
+  font:
+    9px DM Mono,
+    monospace;
+}
+.queryMoment {
+  position: absolute;
+  z-index: 5;
+  right: 18%;
+  top: 175px;
+  width: 245px;
+  padding: 13px;
+  border: 1px solid #596d4b;
+  background: #151b13;
+}
+.queryMoment span {
+  display: block;
+  color: var(--lime);
+  font:
+    8px DM Mono,
+    monospace;
+  margin-bottom: 7px;
+}
+.queryMoment b {
+  font-size: 12px;
+}
+.retrievalBeam {
+  position: absolute;
+  z-index: 4;
+  left: calc(50% + 250px);
+  right: calc(18% + 245px);
+  top: 330px;
+  height: 2px;
+  background: var(--lime);
+  box-shadow: 0 0 14px #c8ff5588;
+}
+.retrievalBeam i {
+  position: absolute;
+  left: 50%;
+  top: -16px;
+  transform: translateX(-50%);
+  padding: 5px 8px;
+  border: 1px solid #596d4b;
+  background: #10150f;
+  color: var(--lime);
+  font:
+    8px DM Mono,
+    monospace;
+  white-space: nowrap;
+}
+.retrievedContext {
+  position: absolute;
+  z-index: 5;
+  right: 18%;
+  top: 355px;
+  width: 245px;
+  padding: 13px;
+  border: 1px solid var(--lime);
+  background: #121911;
+}
+.retrievedContext > small {
+  display: block;
+  color: var(--lime);
+  font:
+    8px DM Mono,
+    monospace;
+  margin-bottom: 8px;
+}
+.retrievedContext article {
+  padding: 8px;
+  border-top: 1px solid #35422f;
+}
+.retrievedContext article b {
+  display: block;
+  color: var(--lime);
+  font:
+    9px DM Mono,
+    monospace;
+}
+.retrievedContext article span {
+  color: #939d90;
+  font:
+    8px DM Mono,
+    monospace;
+}
+.mapFooter {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  border: 1px solid #3e4d37;
+  background: #10150f;
+  white-space: nowrap;
+}
+.mapFooter span {
+  color: var(--lime);
+  font:
+    9px DM Mono,
+    monospace;
+}
+.mapFooter b {
+  color: #64705e;
+}
+@keyframes knowledgePulse {
+  50% {
+    border-color: #789c52;
+    background: #192316;
+    transform: translateY(-2px);
+  }
+}
 @keyframes meshFlow {
   to {
     background-position: -220% 0;
@@ -1093,6 +1413,30 @@
   .proof {
     grid-template-columns: 1fr;
   }
+  .intelligenceMap {
+    min-height: 820px;
+  }
+  .developerCluster {
+    width: 190px;
+  }
+  .intelligenceCore {
+    width: 410px;
+  }
+  .queryMoment,
+  .retrievedContext {
+    right: 20px;
+    width: 205px;
+  }
+  .retrievalBeam {
+    display: none;
+  }
+  .mapFooter {
+    gap: 8px;
+    padding: 10px;
+  }
+  .mapFooter span {
+    font-size: 7px;
+  }
 }
 @media (max-width: 700px) {
   .header {
@@ -1123,6 +1467,9 @@
   }
   .peer,
   .hubPeer {
+    display: none;
+  }
+  .mesh {
     display: none;
   }
   .hub {
@@ -1191,6 +1538,43 @@
   .footer a {
     display: inline-block;
     margin-top: 35px;
+  }
+  .intelligenceMap {
+    min-height: 680px;
+  }
+  .developerCluster {
+    display: none;
+  }
+  .intelligenceCore {
+    width: calc(100% - 30px);
+    min-height: 410px;
+    top: 43%;
+    padding: 20px;
+  }
+  .knowledgeCloud {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .knowledgeCloud span:nth-child(n + 9) {
+    display: none;
+  }
+  .queryMoment {
+    left: 15px;
+    right: auto;
+    top: 490px;
+    width: calc(50% - 20px);
+  }
+  .retrievedContext {
+    right: 15px;
+    top: 490px;
+    width: calc(50% - 20px);
+  }
+  .mapFooter {
+    display: none;
+  }
+  .workspaceLabel {
+    max-width: calc(100% - 30px);
+    text-align: center;
+    white-space: normal;
   }
 }
 @media (prefers-reduced-motion: reduce) {

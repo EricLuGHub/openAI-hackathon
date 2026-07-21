@@ -16,20 +16,27 @@ async function proxy(
   headers.delete("host");
   headers.delete("content-length");
 
-  const response = await fetch(target, {
-    method: request.method,
-    headers,
-    body:
-      request.method === "GET" || request.method === "HEAD"
-        ? undefined
-        : await request.arrayBuffer(),
-    redirect: "manual",
-  });
+  try {
+    const response = await fetch(target, {
+      method: request.method,
+      headers,
+      body:
+        request.method === "GET" || request.method === "HEAD"
+          ? undefined
+          : await request.arrayBuffer(),
+      redirect: "manual",
+    });
 
-  return new Response(response.body, {
-    status: response.status,
-    headers: response.headers,
-  });
+    return new Response(response.body, {
+      status: response.status,
+      headers: response.headers,
+    });
+  } catch {
+    return Response.json(
+      { error: "Authentication service is temporarily unavailable" },
+      { status: 502 },
+    );
+  }
 }
 
 export const GET = proxy;
