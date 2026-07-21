@@ -298,18 +298,26 @@
   white-space: nowrap;
 }
 .m1 {
-  animation: move 8s linear infinite;
+  left: 50% !important;
+  transform: translateX(-50%);
+  animation: bubbleFloat 6s ease-in-out infinite;
 }
 .m2 {
+  left: 50% !important;
   top: 22px !important;
-  animation: move 8s 4s linear infinite;
+  transform: translateX(-50%);
+  animation: bubbleFloat 6s -3s ease-in-out infinite;
 }
 .m3 {
-  animation: move 8s 1s linear infinite;
+  left: 50% !important;
+  transform: translateX(-50%);
+  animation: bubbleFloat 6s -1.5s ease-in-out infinite;
 }
 .m4 {
+  left: 50% !important;
   top: 22px !important;
-  animation: move 8s 5s linear infinite;
+  transform: translateX(-50%);
+  animation: bubbleFloat 6s -4.5s ease-in-out infinite;
 }
 .hub {
   width: 150px;
@@ -340,6 +348,8 @@
   font:
     7px DM Mono,
     monospace;
+  line-height: 1.5;
+  text-align: center;
 }
 .orbit {
   position: absolute;
@@ -881,28 +891,18 @@
 .mesh {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   pointer-events: none;
 }
-.mesh i {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 34%;
-  height: 2px;
-  transform-origin: left center;
-  background: linear-gradient(90deg, #c8ff5544, var(--lime), #c8ff5518);
-  background-size: 220% 100%;
-  animation: meshFlow 5s linear infinite;
-}
-.meshC {
-  transform: rotate(-31deg);
-}
-.meshD {
-  transform: rotate(-149deg);
-}
-.meshE {
-  transform: rotate(31deg);
+.mesh line {
+  stroke: #a7d753;
+  stroke-width: 0.16;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 3 1.5;
+  opacity: 0.62;
+  animation: meshLineFlow 8s linear infinite;
 }
 .peer,
 .hubPeer {
@@ -929,6 +929,26 @@
 .peerE {
   right: 19%;
   bottom: 55px;
+}
+.peerF {
+  left: 19%;
+  bottom: 55px;
+}
+.peerG {
+  right: 7%;
+  top: 47%;
+}
+.peerH {
+  left: 7%;
+  top: 37%;
+}
+.peerI {
+  left: 9%;
+  top: 61%;
+}
+.liveMap .peer {
+  opacity: 0.38;
+  filter: grayscale(0.55);
 }
 .workspaceLabel {
   top: 20px;
@@ -1172,6 +1192,18 @@
   vector-effect: non-scaling-stroke;
   opacity: 0.72;
 }
+.connectionField .activeRetrievalLine {
+  stroke: var(--lime);
+  stroke-width: 0.24;
+  stroke-dasharray: 1.2 1.1;
+  opacity: 1;
+  filter: drop-shadow(0 0 2px var(--lime));
+  animation: retrievalLineFlow 3s linear infinite;
+}
+.retrievalPulse {
+  fill: var(--lime);
+  filter: drop-shadow(0 0 3px var(--lime));
+}
 .intelligenceCore {
   width: 500px;
   min-height: 425px;
@@ -1363,6 +1395,29 @@
 @keyframes meshFlow {
   to {
     background-position: -220% 0;
+  }
+}
+@keyframes meshLineFlow {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+@keyframes bubbleFloat {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translateX(calc(-50% - 8px));
+  }
+  50% {
+    opacity: 1;
+    border-color: var(--lime);
+    box-shadow: 0 0 14px #c8ff5522;
+    transform: translateX(calc(-50% + 8px));
+  }
+}
+@keyframes retrievalLineFlow {
+  to {
+    stroke-dashoffset: -18;
   }
 }
 @keyframes move {

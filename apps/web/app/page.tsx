@@ -38,7 +38,9 @@ function DeveloperCluster({
       <div className={styles.agentStack}>
         {agents.map((agent) => (
           <div
-            className={active.has(agent) ? styles.activeMiniAgent : styles.pastAgent}
+            className={
+              active.has(agent) ? styles.activeMiniAgent : styles.pastAgent
+            }
             key={agent}
           >
             <strong>{agent}</strong>
@@ -94,20 +96,25 @@ export default function LandingPage() {
           <div className={styles.manyLabel}>
             MANY AGENTS · MANY DEVELOPERS · ONE REPOSITORY WORKSPACE
           </div>
-          <div className={styles.mesh} aria-hidden="true">
-            <i className={styles.meshC} />
-            <i className={styles.meshD} />
-            <i className={styles.meshE} />
-          </div>
-          <div className={styles.actor}>
-            <Human name="Developer A" />
-            <Agent name="A" />
-            <small>INVESTIGATES</small>
-          </div>
+          <svg
+            className={styles.mesh}
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <line x1="50" y1="50" x2="81" y2="19" />
+            <line x1="50" y1="50" x2="19" y2="19" />
+            <line x1="50" y1="50" x2="79" y2="81" />
+            <line x1="50" y1="50" x2="21" y2="81" />
+            <line x1="50" y1="50" x2="91" y2="55" />
+            <line x1="50" y1="50" x2="9" y2="45" />
+            <line x1="50" y1="50" x2="11" y2="69" />
+          </svg>
+          <div aria-hidden="true" />
           <div className={styles.channel}>
             <span />
-            <i className={styles.m1}>verified workflow</i>
-            <i className={styles.m2}>failed path + evidence</i>
+            <i className={styles.m1}>STRUCTURED FINDINGS</i>
+            <i className={styles.m2}>TESTS · PITFALLS · WORKFLOWS</i>
           </div>
           <div className={styles.hub}>
             <div className={styles.orbit}>
@@ -117,12 +124,16 @@ export default function LandingPage() {
             </div>
             <strong>H</strong>
             <b>HADERACH</b>
-            <small>SHARED AGENT INTELLIGENCE</small>
+            <small>
+              10K+ INDEXED ENTRIES
+              <br />
+              CURATED BY EVIDENCE
+            </small>
           </div>
           <div className={styles.channel}>
             <span />
-            <i className={styles.m3}>ranked context</i>
-            <i className={styles.m4}>3 signals from 48 findings</i>
+            <i className={styles.m3}>TASK-RANKED SIGNAL</i>
+            <i className={styles.m4}>3 OF 10K+ ENTRIES</i>
           </div>
           <div className={styles.actor}>
             <Agent name="B" />
@@ -131,18 +142,34 @@ export default function LandingPage() {
           </div>
           <div className={`${styles.peer} ${styles.peerC}`}>
             <b>C</b>
-            <small>PROVES PATH</small>
+            <small>DEV 3 · PAST</small>
           </div>
           <div className={`${styles.peer} ${styles.peerD}`}>
             <b>D</b>
-            <small>PUBLISHES FINDING</small>
+            <small>DEV 2 · PAST</small>
           </div>
           <div className={`${styles.peer} ${styles.peerE}`}>
             <b>E</b>
-            <small>REINFORCES</small>
+            <small>DEV 1 · PAST</small>
+          </div>
+          <div className={`${styles.peer} ${styles.peerF}`}>
+            <b>F</b>
+            <small>DEV 4 · PAST</small>
+          </div>
+          <div className={`${styles.peer} ${styles.peerG}`}>
+            <b>G</b>
+            <small>DEV 3 · PAST</small>
+          </div>
+          <div className={`${styles.peer} ${styles.peerH}`}>
+            <b>H</b>
+            <small>DEV 2 · PAST</small>
+          </div>
+          <div className={`${styles.peer} ${styles.peerI}`}>
+            <b>I</b>
+            <small>DEV 4 · PAST</small>
           </div>
           <div className={styles.live}>
-            <i /> 5 AGENTS CONNECTED · ONE REPOSITORY WORKSPACE
+            <i /> 4 DEVELOPERS · 7 PAST AGENTS · 10K+ REUSABLE ENTRIES
           </div>
         </div>
       </section>
@@ -244,7 +271,20 @@ export default function LandingPage() {
             <line x1="50" y1="43" x2="14" y2="26" />
             <line x1="50" y1="43" x2="86" y2="26" />
             <line x1="50" y1="43" x2="14" y2="75" />
-            <line x1="50" y1="43" x2="86" y2="75" />
+            <line
+              className={styles.activeRetrievalLine}
+              x1="50"
+              y1="43"
+              x2="86"
+              y2="75"
+            />
+            <circle className={styles.retrievalPulse} r="0.55">
+              <animateMotion
+                dur="4.5s"
+                repeatCount="indefinite"
+                path="M 50 43 L 86 75"
+              />
+            </circle>
           </svg>
 
           <div className={styles.intelligenceCore}>
@@ -274,15 +314,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className={styles.queryMoment}>
-            <span>CURRENT TASK</span>
-            <b>“Why does queue cleanup reject?”</b>
-          </div>
           <div className={styles.retrievalBeam}>
-            <i>3 highest-signal findings</i>
+            <i>CURATED SIGNAL MOVING TO DEVELOPER D</i>
           </div>
           <div className={styles.retrievedContext}>
-            <small>CURATED FOR AGENT B4</small>
+            <small>CURATED FOR AGENT D3</small>
             <article>
               <b>PITFALL</b>
               <span>Past Agent A1 · verified</span>
