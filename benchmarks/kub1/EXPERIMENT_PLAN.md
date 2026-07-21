@@ -188,6 +188,29 @@ Before running any solver:
 
 Any later change to these inputs creates a new experiment version.
 
+## Operational failure and repair policy
+
+The benchmark operator is authorized to diagnose and fix Haderach, MCP,
+workspace, ingestion, retrieval, telemetry, test-harness, or supporting
+infrastructure bugs encountered during preparation or execution, and then
+continue the experiment without waiting for additional approval.
+
+Repairs must not be hidden inside a measured result:
+
+1. Stop and mark any trial affected by an infrastructure or application defect
+   as invalid.
+2. Preserve the error, logs, timing, and diagnosis as an incident artifact.
+3. Implement and validate the repair.
+4. If the repair changes solver-visible behavior, retrieval, stored data,
+   prompts, tests, or measurement, create a new experiment version and freeze
+   new hashes.
+5. Rerun every affected condition from a fresh sanitized trial directory so
+   control and assisted results remain comparable.
+6. Continue autonomously once the repaired baseline and harness checks pass.
+
+An invalidated run may be shown as engineering evidence in the showcase, but it
+must not be included in benchmark outcome or efficiency statistics.
+
 ## Phase 2: prepare a sanitized source snapshot
 
 1. Fetch `kubernetes/kubernetes` at the buggy revision.
