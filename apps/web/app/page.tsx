@@ -94,7 +94,7 @@ export default function LandingPage() {
         </div>
         <div className={styles.liveMap}>
           <div className={styles.manyLabel}>
-            MANY AGENTS · MANY DEVELOPERS · ONE REPOSITORY WORKSPACE
+            6 PAST AGENTS · 4 DEVELOPERS · ONE REPOSITORY WORKSPACE
           </div>
           <svg
             className={styles.mesh}
@@ -106,7 +106,6 @@ export default function LandingPage() {
             <line x1="50" y1="50" x2="19" y2="19" />
             <line x1="50" y1="50" x2="79" y2="81" />
             <line x1="50" y1="50" x2="21" y2="81" />
-            <line x1="50" y1="50" x2="91" y2="55" />
             <line x1="50" y1="50" x2="9" y2="45" />
             <line x1="50" y1="50" x2="11" y2="69" />
           </svg>
@@ -142,34 +141,54 @@ export default function LandingPage() {
           </div>
           <div className={`${styles.peer} ${styles.peerC}`}>
             <b>C</b>
-            <small>DEV 3 · PAST</small>
+            <small>
+              PAST
+              <br />
+              TEST PATH
+            </small>
           </div>
           <div className={`${styles.peer} ${styles.peerD}`}>
             <b>D</b>
-            <small>DEV 2 · PAST</small>
+            <small>
+              PAST
+              <br />
+              WORKFLOW
+            </small>
           </div>
           <div className={`${styles.peer} ${styles.peerE}`}>
             <b>E</b>
-            <small>DEV 1 · PAST</small>
+            <small>
+              PAST
+              <br />
+              CONSTRAINT
+            </small>
           </div>
           <div className={`${styles.peer} ${styles.peerF}`}>
             <b>F</b>
-            <small>DEV 4 · PAST</small>
-          </div>
-          <div className={`${styles.peer} ${styles.peerG}`}>
-            <b>G</b>
-            <small>DEV 3 · PAST</small>
+            <small>
+              PAST
+              <br />
+              PITFALL
+            </small>
           </div>
           <div className={`${styles.peer} ${styles.peerH}`}>
             <b>H</b>
-            <small>DEV 2 · PAST</small>
+            <small>
+              PAST
+              <br />
+              DECISION
+            </small>
           </div>
           <div className={`${styles.peer} ${styles.peerI}`}>
             <b>I</b>
-            <small>DEV 4 · PAST</small>
+            <small>
+              PAST
+              <br />
+              CODE PATH
+            </small>
           </div>
           <div className={styles.live}>
-            <i /> 4 DEVELOPERS · 7 PAST AGENTS · 10K+ REUSABLE ENTRIES
+            <i /> 4 DEVELOPERS · 6 PAST AGENTS · 10K+ REUSABLE ENTRIES
           </div>
         </div>
       </section>

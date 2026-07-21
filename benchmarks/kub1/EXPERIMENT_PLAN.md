@@ -79,6 +79,100 @@ the main comparison because it has a greater risk of solution leakage.
 
 The primary claim must be based on Conditions A and B.
 
+## Workspace and showcase data lifecycle
+
+KUB1 uses one Kubernetes Haderach workspace for both the controlled benchmark
+and the eventual judge-facing showcase. It does not create a separate showcase
+workspace. Experimental integrity comes from sequencing and frozen exports:
+
+1. Build and test the workspace locally first. No benchmark preparation depends
+   on the hosted service being available.
+2. Populate a benchmark-safe corpus from repository evidence and earlier,
+   related Kubernetes work.
+3. Deduplicate entries before approval. Prefer updating or linking an existing
+   entry when the source, claim, code scope, and lesson are materially the same.
+4. Export, audit, hash, and freeze the exact approved entry set used by solver
+   trials.
+5. Run and score all trials against that frozen set.
+6. Only after scoring, retain useful trial findings, mock interactions, reuse
+   events, and additional non-leaking repository knowledge in the same
+   workspace to create a richer judge demo.
+7. Synchronize the locally validated workspace to the cloud after local
+   ingestion, retrieval, deduplication, and graph behavior have been verified.
+
+The hosted showcase may therefore contain more data than the frozen benchmark
+export. The report must identify the export hash used during evaluation so the
+larger post-trial dataset cannot be mistaken for benchmark input.
+
+The showcase should look meaningfully populated without inflating counts with
+repeated facts. It should contain varied granular entries—architecture, code
+paths, test workflows, constraints, pitfalls, failed attempts, decisions, and
+verified outcomes—plus provenance, reuse, and relationships between them.
+
+## Related-PR experience-transfer scenario
+
+The first demo storyline will simulate several past agents working on related
+structured DRA changes, preserving their evidence as Haderach experience, and a
+later agent retrieving the useful subset while working on KUB1. These are
+mocked agent identities and interactions, but their technical claims must be
+grounded in real repository and PR evidence.
+
+### Recommended primary predecessor: PR #137190
+
+[`kubernetes/kubernetes#137190`](https://github.com/kubernetes/kubernetes/pull/137190)
+introduced list-type DRA attributes and their `matchAttribute` and
+`distinctAttribute` semantics. It is the strongest predecessor because it
+predates KUB1 and can legitimately teach a later agent:
+
+- where the experimental structured allocator and constraint code live;
+- that list attributes are treated as sets;
+- that `matchAttribute` uses non-empty intersection semantics;
+- that `distinctAttribute` uses pairwise-disjoint semantics;
+- how the `DRAListTypeAttributes` feature gate reaches the allocator; and
+- how shared allocator table tests express list-attribute behavior.
+
+The simulated predecessor agent may publish those architectural and workflow
+findings. It must not publish KUB1's state-restoration defect or solution.
+
+### Supporting predecessor: PR #135022
+
+[`kubernetes/kubernetes#135022`](https://github.com/kubernetes/kubernetes/pull/135022)
+fixed value comparison in `distinctAttributeConstraint` and added cases to the
+shared allocator test table. It can contribute a separate experience stream
+about inspecting constraint value semantics, using the shared test harness, and
+testing behavior rather than internal representation.
+
+### Supporting predecessor: PR #138885
+
+[`kubernetes/kubernetes#138885`](https://github.com/kubernetes/kubernetes/pull/138885)
+fixed an `AllocationMode: All` structured-allocator candidate that lacked its
+source pool when shared counters were consumed. It can contribute experience
+about keeping stable, incubating, and experimental variants aligned and placing
+cross-variant regression cases in `allocatortesting`.
+
+### Mock interaction sequence
+
+1. A past agent working from PR #137190 publishes feature-gate, set-semantics,
+   file-location, and testing-workflow entries.
+2. A second past agent working from PR #135022 adds a distinct constraint
+   pitfall and links it to the shared table-test workflow instead of duplicating
+   that workflow entry.
+3. A third past agent working from PR #138885 reinforces the shared-harness and
+   three-variant maintenance entries with new evidence and reuse provenance.
+4. The KUB1 solver retrieves a compact, ranked bundle from this accumulated
+   corpus. The demo graph records which entries were retrieved, applied, and
+   verified.
+5. The UI may show a mocked agent inquiry and a later agent response to
+   demonstrate live interaction, but the benchmark value comes from the
+   structured, reusable entries that remain after the interaction—not from a
+   chat transcript.
+
+PR #140431, which later centralized rollback of structured-allocator device
+state, is too close to KUB1's state-restoration theme and postdates the target
+starting point. It is excluded from the frozen benchmark corpus. It may be
+added to the same workspace only after all KUB1 trials are scored, as clearly
+marked post-evaluation showcase data.
+
 ## Phase 1: establish the benchmark manifest
 
 Before running any solver:

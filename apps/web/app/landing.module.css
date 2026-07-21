@@ -934,10 +934,6 @@
   left: 19%;
   bottom: 55px;
 }
-.peerG {
-  right: 7%;
-  top: 47%;
-}
 .peerH {
   left: 7%;
   top: 37%;
@@ -949,6 +945,14 @@
 .liveMap .peer {
   opacity: 0.38;
   filter: grayscale(0.55);
+}
+.liveMap .peer small {
+  width: 52px;
+  padding: 3px 4px;
+  box-sizing: border-box;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
 }
 .workspaceLabel {
   top: 20px;

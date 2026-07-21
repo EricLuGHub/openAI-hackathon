@@ -1,0 +1,112 @@
+<div id="haderach-system-flow">
+  <style>
+    #haderach-system-flow { color: var(--foreground); width: 100%; }
+    #haderach-system-flow .flow-controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+    #haderach-system-flow .diagram-wrap { position: relative; width: 100%; }
+    #haderach-system-flow .diagram { display: block; width: 100%; height: auto; min-height: 430px; }
+    #haderach-system-flow .node-box { stroke-width: 2; }
+    #haderach-system-flow .node-ui .node-box { fill: color-mix(in srgb, var(--viz-series-1) 16%, var(--card)); stroke: var(--viz-series-1); }
+    #haderach-system-flow .node-db .node-box { fill: color-mix(in srgb, var(--viz-series-2) 16%, var(--card)); stroke: var(--viz-series-2); }
+    #haderach-system-flow .node-workspace .node-box { fill: color-mix(in srgb, var(--viz-series-3) 16%, var(--card)); stroke: var(--viz-series-3); }
+    #haderach-system-flow .node-mcp .node-box { fill: color-mix(in srgb, var(--viz-series-4) 16%, var(--card)); stroke: var(--viz-series-4); }
+    #haderach-system-flow .node-icon { stroke-width: 1.5; }
+    #haderach-system-flow .node-ui .node-icon { fill: color-mix(in srgb, var(--viz-series-1) 25%, var(--card)); stroke: var(--viz-series-1); }
+    #haderach-system-flow .node-db .node-icon { fill: color-mix(in srgb, var(--viz-series-2) 25%, var(--card)); stroke: var(--viz-series-2); }
+    #haderach-system-flow .node-workspace .node-icon { fill: color-mix(in srgb, var(--viz-series-3) 25%, var(--card)); stroke: var(--viz-series-3); }
+    #haderach-system-flow .node-mcp .node-icon { fill: color-mix(in srgb, var(--viz-series-4) 25%, var(--card)); stroke: var(--viz-series-4); }
+    #haderach-system-flow .icon-glyph { fill: none; stroke: var(--foreground); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    #haderach-system-flow .node-title { fill: var(--foreground); font-weight: 500; font-size: 16px; }
+    #haderach-system-flow .node-copy { fill: var(--muted-foreground); font-size: 12px; }
+    #haderach-system-flow .edge { fill: none; stroke: var(--border); stroke-width: 2; marker-end: url(#flow-arrow); transition: stroke .2s ease, stroke-width .2s ease, opacity .2s ease; }
+    #haderach-system-flow .edge.secondary { stroke-dasharray: 5 5; }
+    #haderach-system-flow .edge-label-bg { fill: var(--background); }
+    #haderach-system-flow .edge-label { fill: var(--muted-foreground); font-size: 11px; text-anchor: middle; }
+    #haderach-system-flow .edge.is-active { stroke: var(--viz-series-1); stroke-width: 3.5; }
+    #haderach-system-flow .edge.is-dimmed, #haderach-system-flow .edge-label-group.is-dimmed { opacity: .22; }
+    #haderach-system-flow .step-detail { margin-top: .8rem; min-height: 1.5rem; color: var(--foreground); }
+    #haderach-system-flow .step-detail strong { font-weight: 500; }
+    @media (max-width: 560px) {
+      #haderach-system-flow .diagram { min-height: 610px; }
+      #haderach-system-flow .desktop-layout { display: none; }
+      #haderach-system-flow .mobile-layout { display: block; }
+    }
+    @media (min-width: 561px) { #haderach-system-flow .mobile-layout { display: none; } }
+    @media (prefers-reduced-motion: reduce) { #haderach-system-flow .edge { transition: none; } }
+  </style>
+
+  <div class="flow-controls" aria-label="Diagram steps">
+    <button type="button" class="btn btn-primary" data-step="all" aria-pressed="true">Full system</button>
+    <button type="button" class="btn" data-step="1" aria-pressed="false">1. Frontend data</button>
+    <button type="button" class="btn" data-step="2" aria-pressed="false">2. Agent operations</button>
+    <button type="button" class="btn" data-step="3" aria-pressed="false">3. Persistence</button>
+  </div>
+
+  <div class="diagram-wrap">
+    <svg class="diagram desktop-layout" viewBox="0 0 920 540" role="img" aria-labelledby="flow-title flow-desc">
+      <title id="flow-title">Agent Haderach system interaction diagram</title>
+      <desc id="flow-desc">The frontend exchanges dashboard data with the cloud through a separate backend REST API. The frontend does not communicate with the workspace or MCP server. The workspace uses the MCP server for all agent operations, and the MCP server reads and writes the cloud database.</desc>
+      <defs>
+        <marker id="flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
+        </marker>
+      </defs>
+
+      <path class="edge" data-edge="1" style="marker-start:url(#flow-arrow)" d="M260 144 C340 76 580 76 660 144"></path>
+      <g class="edge-label-group" data-label="1"><rect class="edge-label-bg" x="380" y="76" width="160" height="24" rx="12"></rect><text class="edge-label" x="460" y="92">via backend REST API</text></g>
+      <path class="edge" data-edge="2" style="marker-start:url(#flow-arrow)" d="M340 382 C420 350 480 342 560 354"></path>
+      <g class="edge-label-group" data-label="2"><rect class="edge-label-bg" x="377" y="310" width="146" height="24" rx="12"></rect><text class="edge-label" x="450" y="326">all agent operations</text></g>
+      <path class="edge" data-edge="3" style="marker-start:url(#flow-arrow)" d="M340 446 C500 514 708 430 760 220"></path>
+      <g class="edge-label-group" data-label="3"><rect class="edge-label-bg" x="500" y="466" width="180" height="24" rx="12"></rect><text class="edge-label" x="590" y="482">validate, rank, read &amp; write</text></g>
+
+      <g class="node-ui" transform="translate(40 110)"><rect class="node-box" width="220" height="110" rx="18"></rect><circle class="node-icon" cx="34" cy="36" r="17"></circle><g class="icon-glyph"><rect x="25" y="28" width="18" height="13" rx="2"></rect><path d="M30 46h8M34 41v5"></path></g><text class="node-title" x="62" y="40">UI Frontend</text><text class="node-copy" x="24" y="72">Next.js dashboard for people</text><text class="node-copy" x="24" y="92">to manage and inspect activity</text></g>
+      <g class="node-db" transform="translate(660 110)"><rect class="node-box" width="220" height="110" rx="18"></rect><ellipse class="node-icon" cx="34" cy="36" rx="17" ry="17"></ellipse><g class="icon-glyph"><ellipse cx="34" cy="29" rx="9" ry="4"></ellipse><path d="M25 29v14c0 2 4 4 9 4s9-2 9-4V29M25 36c0 2 4 4 9 4s9-2 9-4"></path></g><text class="node-title" x="62" y="40">Cloud Database</text><text class="node-copy" x="24" y="72">PostgreSQL stores experience,</text><text class="node-copy" x="24" y="92">feedback, users and workspaces</text></g>
+      <g class="node-workspace" transform="translate(560 300)"><rect class="node-box" width="300" height="130" rx="18"></rect><circle class="node-icon" cx="40" cy="40" r="19"></circle><g class="icon-glyph"><path d="M29 35h9l3 3h11v13H29z"></path><path d="M29 38h23"></path></g><text class="node-title" x="70" y="45">Workspace</text><text class="node-copy" x="28" y="82">Repository, tasks and worktrees</text><text class="node-copy" x="28" y="103">hold the coding agent's local context</text></g>
+      <g class="node-mcp" transform="translate(40 350)"><rect class="node-box" width="300" height="150" rx="18"></rect><circle class="node-icon" cx="40" cy="40" r="19"></circle><g class="icon-glyph"><path d="M35 29v8M45 29v8M31 37h18v4a9 9 0 0 1-9 9v5M36 55h8"></path></g><text class="node-title" x="70" y="45">MCP Server</text><text class="node-copy" x="28" y="82">Gateway for all agent operations</text><text class="node-copy" x="28" y="104">Search, save, feedback and questions</text><text class="node-copy" x="28" y="126">use one controlled interface</text></g>
+    </svg>
+
+    <svg class="diagram mobile-layout" viewBox="0 0 360 540" role="img" aria-label="The UI connects only to cloud data through REST. The workspace connects to MCP, and MCP connects to the cloud database.">
+      <defs><marker id="mobile-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path></marker></defs>
+      <g class="node-ui" transform="translate(45 10)"><rect class="node-box" width="270" height="82" rx="16"></rect><circle class="node-icon" cx="28" cy="31" r="15"></circle><g class="icon-glyph"><rect x="21" y="25" width="14" height="10" rx="2"></rect><path d="M24 40h8M28 35v5"></path></g><text class="node-title" x="52" y="32">UI Frontend</text><text class="node-copy" x="20" y="60">Manage workspaces and inspect activity</text></g>
+      <path class="edge" data-edge="1" style="marker-start:url(#mobile-arrow);marker-end:url(#mobile-arrow)" d="M315 50 C350 50 350 429 315 429"></path>
+      <g class="node-workspace" transform="translate(45 126)"><rect class="node-box" width="270" height="82" rx="16"></rect><circle class="node-icon" cx="28" cy="31" r="15"></circle><g class="icon-glyph"><path d="M19 27h7l3 3h9v11H19zM19 30h19"></path></g><text class="node-title" x="52" y="32">Workspace</text><text class="node-copy" x="20" y="60">Repository, tasks and agent context</text></g>
+      <path class="edge" data-edge="2" style="marker-start:url(#mobile-arrow);marker-end:url(#mobile-arrow)" d="M180 208 L180 242"></path>
+      <g class="node-mcp" transform="translate(45 242)"><rect class="node-box" width="270" height="82" rx="16"></rect><circle class="node-icon" cx="28" cy="31" r="15"></circle><g class="icon-glyph"><path d="M24 21v7M32 21v7M21 28h14v3a7 7 0 0 1-7 7v4"></path></g><text class="node-title" x="52" y="32">MCP Server</text><text class="node-copy" x="20" y="60">Performs every agent data operation</text></g>
+      <path class="edge" data-edge="3" style="marker-start:url(#mobile-arrow);marker-end:url(#mobile-arrow)" d="M180 324 L180 382"></path>
+      <g class="node-db" transform="translate(45 382)"><rect class="node-box" width="270" height="94" rx="16"></rect><circle class="node-icon" cx="28" cy="31" r="15"></circle><g class="icon-glyph"><ellipse cx="28" cy="24" rx="7" ry="3"></ellipse><path d="M21 24v13c0 2 3 3 7 3s7-1 7-3V24M21 30c0 2 3 3 7 3s7-1 7-3"></path></g><text class="node-title" x="52" y="32">Cloud Database</text><text class="node-copy" x="20" y="62">Cloud API authenticates, filters and ranks;</text><text class="node-copy" x="20" y="80">PostgreSQL persists experience and feedback</text></g>
+    </svg>
+  </div>
+
+  <div class="step-detail" aria-live="polite"><strong>Full system:</strong> The frontend has its own REST path to cloud data. Separately, the workspace uses MCP for every agent operation, and MCP owns the database interaction.</div>
+
+  <script>
+    (() => {
+      const root = document.getElementById('haderach-system-flow');
+      const detail = root.querySelector('.step-detail');
+      const descriptions = {
+        all: '<strong>Full system:</strong> The frontend has its own REST path to cloud data. Separately, the workspace uses MCP for every agent operation, and MCP owns the database interaction.',
+        1: '<strong>Frontend data:</strong> The UI uses the backend REST API to manage accounts and workspaces and to display database-backed activity. It never calls the workspace or MCP server.',
+        2: '<strong>Agent operations:</strong> The coding agent in the workspace calls the MCP server for every experience search, save, question, answer, incident and feedback operation.',
+        3: '<strong>Persistence:</strong> The MCP backend validates and executes agent operations, then reads or writes PostgreSQL through the cloud service layer.'
+      };
+      root.querySelectorAll('[data-step]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const step = button.dataset.step;
+          root.querySelectorAll('[data-step]').forEach((item) => {
+            const active = item === button;
+            item.setAttribute('aria-pressed', String(active));
+            item.classList.toggle('btn-primary', active);
+          });
+          root.querySelectorAll('[data-edge]').forEach((edge) => {
+            const active = step === 'all' || edge.dataset.edge === step;
+            edge.classList.toggle('is-active', step !== 'all' && active);
+            edge.classList.toggle('is-dimmed', !active);
+          });
+          root.querySelectorAll('[data-label]').forEach((label) => {
+            label.classList.toggle('is-dimmed', step !== 'all' && label.dataset.label !== step);
+          });
+          detail.innerHTML = descriptions[step];
+        });
+      });
+    })();
+  </script>
+</div>
